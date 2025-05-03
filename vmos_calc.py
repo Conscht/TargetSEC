@@ -1,0 +1,32 @@
+from wvmos import get_wvmos
+import soundfile as sf
+import librosa
+import torch
+model = get_wvmos(cuda=True)
+model.eval()
+# mos = model.calculate_dir("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/4/", mean=True) 
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/0.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/1.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/2.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/3.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/4.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/5.wav")
+print(mos)
+
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval/0.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval/1.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval/2.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval/3.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval/4.wav")
+print(mos)
+mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval/5.wav")
+print(mos)

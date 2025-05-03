@@ -1,0 +1,269 @@
+# BA Constantin LDM
+
+
+
+## Latent Diffusion Models for Emotion Conditioned Speech Synthesis
+
+### Dataset 
+MSP-Podcast v1.10 `sppc7:data/rajprabhu/dataset/MSP-Podcast-1.10`
+/export/scratch/dataset/MSP-Podcast-1.10/Audio/MSP-PODCAST_0001_0013.wav
+
+### Speaker and Lexical Embedding
+/data/rajprabhu/dataset/MSP-Podcast-1.10/QuantizedAudio/hubert-km100/parsed_with_spkrEmbeds
+Lexical Shape with: {audio: 'path', hubert: 'embedd', spkr_embeds: 'embedd'}
+Token size: 
+ - Max of Hubert embeddings: 596
+ - Min of Hubert embeddings: 95
+ - Number of Speaker embeddings: 16903
+ - Max of Speaker embeddings: 512
+ - Min of Speaker embeddings: 512
+ - Concatenation = 741 => since we take Hubert as 101 
+
+ Important: Hubert has sampling rate of ~~ 50 Hz, therefore we have around almost 50 samples per min => we use 101 samples
+
+ For 1 second Synthesis we will try 51 samples
+
+ 101 + 512+ 128
+
+### Architecture
+processor = Wav2Vec2Processor.from_pretrained('audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim')
+emotional_encoder = EmotionModel.from_pretrained('audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim')
+
+
+# Pip List
+Package                      Version
+---------------------------- --------------
+absl-py                      2.1.0
+accelerate                   0.31.0
+aiohttp                      3.9.5
+aiosignal                    1.3.1
+anyio                        4.4.0
+argon2-cffi                  23.1.0
+argon2-cffi-bindings         21.2.0
+arrow                        1.3.0
+asttokens                    2.4.1
+astunparse                   1.6.3
+async-lru                    2.0.4
+attrs                        23.2.0
+audeer                       2.2.0
+audioread                    3.0.1
+audobject                    0.7.11
+audonnx                      0.7.0
+Babel                        2.15.0
+backports.tarfile            1.2.0
+beautifulsoup4               4.12.3
+bleach                       6.1.0
+certifi                      2024.6.2
+cffi                         1.16.0
+charset-normalizer           3.3.2
+coloredlogs                  15.0.1
+comm                         0.2.2
+contourpy                    1.2.1
+cryptography                 43.0.0
+cycler                       0.12.1
+debugpy                      1.8.2
+decorator                    5.1.1
+defusedxml                   0.7.1
+diffusers                    0.18.2
+docutils                     0.21.2
+einops                       0.8.0
+executing                    2.0.1
+fastjsonschema               2.20.0
+filelock                     3.15.1
+flatbuffers                  24.3.25
+fonttools                    4.53.0
+fqdn                         1.5.1
+frozenlist                   1.4.1
+fsspec                       2024.6.0
+gast                         0.5.5
+git-filter-repo              2.45.0
+google-pasta                 0.2.0
+grpcio                       1.64.1
+h11                          0.14.0
+h5py                         3.11.0
+httpcore                     1.0.5
+httpx                        0.27.0
+huggingface-hub              0.23.4
+humanfriendly                10.0
+idna                         3.7
+importlib_metadata           7.1.0
+inflect                      7.2.1
+ipykernel                    6.29.5
+ipython                      8.26.0
+ipywidgets                   8.1.3
+isoduration                  20.11.0
+jaraco.classes               3.4.0
+jaraco.context               5.3.0
+jaraco.functools             4.0.1
+jedi                         0.19.1
+jeepney                      0.8.0
+Jinja2                       3.1.4
+joblib                       1.4.2
+json5                        0.9.25
+jsonpointer                  3.0.0
+jsonschema                   4.23.0
+jsonschema-specifications    2023.12.1
+jupyter                      1.0.0
+jupyter_client               8.6.2
+jupyter-console              6.6.3
+jupyter_core                 5.7.2
+jupyter-events               0.10.0
+jupyter-lsp                  2.2.5
+jupyter_server               2.14.2
+jupyter_server_terminals     0.5.3
+jupyterlab                   4.2.4
+jupyterlab_pygments          0.3.0
+jupyterlab_server            2.27.3
+jupyterlab_widgets           3.0.11
+keras                        3.4.0
+keyring                      25.2.1
+kiwisolver                   1.4.5
+lazy_loader                  0.4
+libclang                     18.1.1
+librosa                      0.9.2
+lightning-utilities          0.11.2
+llvmlite                     0.42.0
+Markdown                     3.6
+markdown-it-py               3.0.0
+MarkupSafe                   2.1.5
+matplot                      0.1.9
+matplotlib                   3.9.0
+matplotlib-inline            0.1.7
+mdurl                        0.1.2
+mistune                      3.0.2
+ml-dtypes                    0.3.2
+more-itertools               10.3.0
+mpmath                       1.3.0
+msgpack                      1.0.8
+multidict                    6.0.5
+namex                        0.0.8
+nbclient                     0.10.0
+nbconvert                    7.16.4
+nbformat                     5.10.4
+nest-asyncio                 1.6.0
+networkx                     3.3
+nh3                          0.2.18
+notebook                     7.2.1
+notebook_shim                0.2.4
+numba                        0.59.1
+numpy                        1.26.4
+nvidia-cublas-cu12           12.1.3.1
+nvidia-cuda-cupti-cu12       12.1.105
+nvidia-cuda-nvrtc-cu12       12.1.105
+nvidia-cuda-runtime-cu12     12.1.105
+nvidia-cudnn-cu12            8.9.2.26
+nvidia-cufft-cu12            11.0.2.54
+nvidia-curand-cu12           10.3.2.106
+nvidia-cusolver-cu12         11.4.5.107
+nvidia-cusparse-cu12         12.1.0.106
+nvidia-nccl-cu12             2.20.5
+nvidia-nvjitlink-cu12        12.5.40
+nvidia-nvtx-cu12             12.1.105
+onnx                         1.16.1
+onnxruntime                  1.18.1
+opt-einsum                   3.3.0
+optree                       0.11.0
+overrides                    7.7.0
+oyaml                        1.0
+packaging                    24.1
+pandas                       2.2.2
+pandocfilters                1.5.1
+parso                        0.8.4
+pexpect                      4.9.0
+pillow                       10.3.0
+pip                          23.0.1
+pkginfo                      1.10.0
+platformdirs                 4.2.2
+pooch                        1.8.2
+progressbar                  2.5
+prometheus_client            0.20.0
+prompt_toolkit               3.0.47
+protobuf                     4.25.3
+psutil                       5.9.8
+ptyprocess                   0.7.0
+pure_eval                    0.2.3
+pycparser                    2.22
+Pygments                     2.18.0
+pyloco                       0.0.139
+pyparsing                    3.1.2
+python-dateutil              2.9.0.post0
+python-json-logger           2.0.7
+python-version               0.0.2
+pytorch-lightning            2.3.0
+pytz                         2024.1
+PyYAML                       6.0.1
+pyzmq                        26.0.3
+qtconsole                    5.5.2
+QtPy                         2.4.1
+readme_renderer              44.0
+referencing                  0.35.1
+regex                        2024.5.15
+requests                     2.32.3
+requests-toolbelt            1.0.0
+resampy                      0.4.3
+rfc3339-validator            0.1.4
+rfc3986                      2.0.0
+rfc3986-validator            0.1.1
+rich                         13.7.1
+rpds-py                      0.19.1
+safetensors                  0.4.3
+scikit-learn                 1.5.0
+scipy                        1.13.1
+SecretStorage                3.3.3
+Send2Trash                   1.8.3
+setuptools                   66.1.1
+SimpleWebSocketServer        0.1.2
+six                          1.16.0
+sniffio                      1.3.1
+soundfile                    0.12.1
+soupsieve                    2.5
+soxr                         0.3.7
+stack-data                   0.6.3
+sympy                        1.12.1
+tensorboard                  2.16.2
+tensorboard-data-server      0.7.2
+tensorboardX                 2.6.2.2
+tensorflow                   2.16.1
+tensorflow-io-gcs-filesystem 0.37.0
+tensorrt                     10.1.0
+tensorrt-cu12                10.1.0
+tensorrt-cu12-bindings       10.1.0
+tensorrt-cu12-libs           10.1.0
+termcolor                    2.4.0
+terminado                    0.18.1
+threadpoolctl                3.5.0
+tinycss2                     1.3.0
+tokenizers                   0.19.1
+torch                        2.3.1
+torch-tb-profiler            0.4.3
+torchaudio                   2.3.1
+torchlibrosa                 0.1.0
+torchmetrics                 1.4.0.post0
+torchvision                  0.18.1
+tornado                      6.4.1
+tqdm                         4.66.4
+traitlets                    5.14.3
+transformers                 4.41.2
+triton                       2.3.1
+twine                        5.1.1
+typeguard                    4.3.0
+types-python-dateutil        2.9.0.20240316
+typing                       3.7.4.3
+typing_extensions            4.12.2
+tzdata                       2024.1
+Unidecode                    1.3.8
+uri-template                 1.3.0
+urllib3                      2.2.1
+ushlex                       0.99.1
+wcwidth                      0.2.13
+webcolors                    24.6.0
+webencodings                 0.5.1
+websocket-client             1.8.0
+Werkzeug                     3.0.3
+wheel                        0.43.0
+widgetsnbextension           4.0.11
+wrapt                        1.16.0
+wvmos                        1.0
+yarl                         1.9.4
+zipp                         3.19.2#   E m o C o n v - L D M  
+ 
