@@ -6,13 +6,10 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from copy import deepcopy
 
-import diffusers.utils as x
 from diffusers import DDPMScheduler, UNet2DConditionModel
-from diffusers.utils import randn_tensor
-from diffusers import AutoencoderKL as DiffuserAutoencoderKL
-from transformers import Wav2Vec2Processor
-
+from processing.diffusion_utils import FixedEmbedding, rescale_noise_cfg
 
 class AudioDiffusion(nn.Module):
     '''Creates an Diffusion Model.
@@ -20,10 +17,10 @@ class AudioDiffusion(nn.Module):
     
     def __init__(
         self,
-        scheduler_name,
         unet_model_name=None,
         unet_model_config_path=None,
         snr_gamma=None,
+        cfg_prob=0.1
 
     ):
         '''Initialize the Diffusion Model, by setting up all components.
@@ -41,14 +38,22 @@ class AudioDiffusion(nn.Module):
 
         assert unet_model_name is not None or unet_model_config_path is not None, "Either UNet pretrain model name or a config file path is required"
 
-        self.scheduler_name = scheduler_name
         self.unet_model_name = unet_model_name
         self.unet_model_config_path = unet_model_config_path
         self.snr_gamma = snr_gamma
 
         # https://huggingface.co/docs/diffusers/v0.14.0/en/api/schedulers/overview
-        self.noise_scheduler = DDPMScheduler.from_pretrained(self.scheduler_name, subfolder="scheduler")
-        self.inference_scheduler = DDPMScheduler.from_pretrained(self.scheduler_name, subfolder="scheduler")
+        self.noise_scheduler = DDPMScheduler(
+            num_train_timesteps=1000,
+            beta_start=0.0001,
+            beta_end=0.02,
+            beta_schedule="linear",
+            prediction_type="v_prediction",
+            clip_sample=False,
+            timestep_spacing="trailing",
+            # rescale_betas_zero_snr=True
+        )
+        self.inference_scheduler = deepcopy(self.noise_scheduler)
 
         if unet_model_config_path is not None:
             unet_config = UNet2DConditionModel.load_config(unet_model_config_path)
@@ -57,6 +62,10 @@ class AudioDiffusion(nn.Module):
             print("UNet initialized randomly.")
         else:
             print("[Info] UNet has not been initialized, missing path.")
+
+        self.null_token = FixedEmbedding(self.unet.config.cross_attention_dim)
+        self.cfg_prob = cfg_prob
+
 
     def compute_snr(self, timesteps):
         """
@@ -120,6 +129,13 @@ class AudioDiffusion(nn.Module):
         attention_mask = None
 
         # Predict the noise with the unet
+        if not validation_mode and self.cfg_prob > 0.0:
+            B, T, D = emotion_embeddings.shape  # T=1 in your setup
+            keep = (torch.rand(B, device=device) >= self.cfg_prob).view(B, 1, 1)  # True = keep cond
+            null = self.null_token(B, T, device=device, dtype=emotion_embeddings.dtype)  # (B, T, D)
+            emotion_embeddings = torch.where(keep, emotion_embeddings, null)
+
+        # Predict the noise with the unet
         if self.set_from == "random":
             model_pred = self.unet(
                 noisy_latents, 
@@ -146,62 +162,112 @@ class AudioDiffusion(nn.Module):
         target = target.squeeze(-1).squeeze(-1)
 
         # Normalize the vectors to ensure they are unit vectors
-        model_pred = F.normalize(model_pred.float(), p=2, dim=1)
-        target = F.normalize(target.float(), p=2, dim=1)
+        # model_pred = F.normalize(model_pred.float(), p=2, dim=1)
+        # target = F.normalize(target.float(), p=2, dim=1)
 
         # Calculate cosine similarity
         cosine_similarity = F.cosine_similarity(model_pred.float(), target.float(), dim=1) # targett and prediction => (batch, 128, 1, 1)
         cosine_similarity = cosine_similarity.mean()
         
         return loss, cosine_similarity
+    
+    def forward_fine_tuning(self, emotion_embeddings, num_steps=10, guidance_scale=3.0):
+        device = emotion_embeddings.device
+        batch_size = emotion_embeddings.size(0)
+
+        self.noise_scheduler.set_timesteps(num_steps, device=device)
+        timesteps = self.noise_scheduler.timesteps
+
+        # Expand embeddings for classifier-free guidance if needed
+        do_guidance = guidance_scale > 1.0
+        if do_guidance:
+            emotion_embeddings = emotion_embeddings.repeat_interleave(2, dim=0)
+
+        # Random latent
+        latents = torch.randn(
+            (batch_size, self.unet.config.in_channels, 1, 1),
+            device=device,
+            dtype=emotion_embeddings.dtype,
+            requires_grad=True  # crucial for backprop
+        ) * self.noise_scheduler.init_noise_sigma
+
+        for t in timesteps:
+            latent_model_input = latents
+            if do_guidance:
+                latent_model_input = torch.cat([latents] * 2)
+
+            latent_model_input = self.noise_scheduler.scale_model_input(latent_model_input, t)
+
+            noise_pred = self.unet(
+                latent_model_input,
+                t,
+                encoder_hidden_states=emotion_embeddings,
+                encoder_attention_mask=None,
+            ).sample
+
+            if do_guidance:
+                noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+            latents = self.noise_scheduler.step(noise_pred, t, latents).prev_sample
+
+        return latents.squeeze(-1).squeeze(-1)  # shape: (B, D)
+
 
     @torch.no_grad()
-    def inference(self, embeddings, inference_scheduler=None, num_steps=20, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
+    def inference(self, embeddings, inference_scheduler=None, num_steps=100, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
         device = embeddings.device
         classifier_free_guidance = guidance_scale > 1.0
         batch_size = embeddings.size(0) * num_samples_per_prompt
 
 
         
-        embeddings = embeddings.repeat_interleave(num_samples_per_prompt, 0)
-        inference_scheduler = self.inference_scheduler
-        emotion_embeddings = embeddings
-        inference_scheduler.set_timesteps(num_steps, device=device)
-        timesteps = inference_scheduler.timesteps
-
-        emotion_embeddings = emotion_embeddings.to(torch.float32)
+        cond = embeddings.repeat_interleave(num_samples_per_prompt, 0).to(torch.float32)  # (B,1,1536)
 
         num_channels_latents = self.unet.config.in_channels
         
         # Get random latent
-        latents = self.prepare_latents(batch_size, inference_scheduler, num_channels_latents, emotion_embeddings.dtype, device)
-
-        num_warmup_steps = len(timesteps) - num_steps * inference_scheduler.order
-        progress_bar = tqdm(range(num_steps), disable=disable_progress)
 
         # Match the size of latent size inside the loop
         if classifier_free_guidance:
-            emotion_embeddings = emotion_embeddings.repeat_interleave(2, 0)
+            B, T, D = cond.shape
+            uncond = self.null_token(B, T, device=cond.device, dtype=cond.dtype)
+            emotion_embeddings = torch.cat([uncond, cond], dim=0)
+        else:
+            emotion_embeddings = cond
+
+        inference_scheduler = self.inference_scheduler
+        inference_scheduler.set_timesteps(num_steps, device=device)
+
+        timesteps = inference_scheduler.timesteps
+
+        num_warmup_steps = len(timesteps) - num_steps * inference_scheduler.order
+        latents = self.prepare_latents(batch_size, inference_scheduler, num_channels_latents, emotion_embeddings.dtype, device)
+
+        
+        progress_bar = tqdm(range(num_steps), disable=disable_progress)
+
 
         # Gradualyl denoise sample
         for i, t in enumerate(timesteps):
-            latent_model_input = torch.cat([latents] * 2) if classifier_free_guidance else latents
-            latent_model_input = inference_scheduler.scale_model_input(latent_model_input, t)
-
-
-            attention_mask = None
+            x = latents
+            if classifier_free_guidance:
+                x = torch.cat([x, x], dim=0)
+            x = inference_scheduler.scale_model_input(x, t)
+            
 
             # Predict noise
-            noise_pred = self.unet(latent_model_input, 
+            noise_pred = self.unet(x,
                                    t, 
                                    encoder_hidden_states=emotion_embeddings,
-                                   encoder_attention_mask=attention_mask,
+                                   encoder_attention_mask=None,
                                    ).sample
 
             if classifier_free_guidance:
-                noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
-
+                noise_pred_uncond, noise_pred_cond = noise_pred.chunk(2)
+                noise_pred_cfg = noise_pred_uncond + guidance_scale * (noise_pred_cond - noise_pred_uncond)
+                noise_pred = rescale_noise_cfg(noise_pred_cfg, noise_pred_cond, k=0.7)
+                
             # remove noise, get sample with less noise
             latents = inference_scheduler.step(noise_pred, t, latents).prev_sample
 

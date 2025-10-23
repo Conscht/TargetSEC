@@ -51,21 +51,15 @@ class MelStyleEncoder(nn.Module):
 
     def forward(self, x, mask=None):
         # Input shape (batch_size, time_steps, mel_channels)
-        print("Shape in forward", x.shape)   
         max_len = x.shape[1]
         slf_attn_mask = mask.unsqueeze(1).expand(-1, max_len, -1) if mask is not None else None
-        print("Shape after mask", x.shape)  
         
         # spectral
-        print("Shape before spectral", x.shape)       
         x = self.spectral(x)   # Expects [batch_size, time_steps, mel_channels]
 
         # temporal
-        print("Shape before transpse", x.shape)
         x = x.transpose(1,2)
-        print("Shape befor Temporal", x.shape)
         x = self.temporal(x)  # Expects [batch_size, channels, time_steps] = > [batch_size, hidden_dim, time_steps]
-        print("Shape after Temporal", x.shape)
         x = x.transpose(1,2)
 
         # self-attention
