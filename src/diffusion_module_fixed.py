@@ -26,14 +26,19 @@ class DiffusionLightningModule(pl.LightningModule):
         self.sr      = 16000
         self.mel_hop = 256
 
-        self.segment_size = 100    # 0.5 secs in Mel Spec Units: 32 * 256 = 8.192 (16kHz)
-        self.embeddingTransform = nn.Sequential(
-            nn.Linear(self.config['cross_attention_dim'],
-                    self.config['cross_attention_dim']),
-            nn.SiLU(),
-            nn.Linear(self.config['cross_attention_dim'],
-                    self.config['cross_attention_dim'])
+        self.segment_size = 125    # 0.5 secs in Mel Spec Units: 32 * 256 = 8.192 (16kHz)
+        self.emo_mlp = nn.Sequential(
+        nn.Linear(1024, 128),
+        nn.SiLU(),
+        nn.Linear(128, 128)
         )
+
+        self.spk_mlp = nn.Sequential(
+            nn.Linear(512, 128),
+            nn.SiLU(),
+            nn.Linear(128,128)
+        )
+
 
         self.style_encoder = style_encoder.eval()
         for p in self.style_encoder.parameters():
@@ -46,19 +51,22 @@ class DiffusionLightningModule(pl.LightningModule):
         mel_slices, audio_slices = [], []
 
         for i in range(B):
-            valid = int(mel_len[i].item())            # <— wichtig
-            if valid < 4:
-                s_m, e_m = 0, valid
+            valid = int(mel_len[i].item())
+
+            # desired segment length in mel frames
+            seg_len = min(self.segment_size, valid)  # self.segment_size ≈ 125
+
+            if valid <= seg_len:
+                s_m = 0
+                e_m = valid
             else:
-                seg_len = max(32, int(np.random.uniform(0.4, 0.8) * valid))
-                seg_len = min(seg_len, valid)
-                s_m = np.random.randint(0, max(1, valid - seg_len + 1))
+                s_m = np.random.randint(0, valid - seg_len + 1)
                 e_m = s_m + seg_len
 
-            mel_seg = mel[i, s_m:e_m, :]              # (t, n_mels)
+            mel_seg = mel[i, s_m:e_m, :]
             s_s = s_m * self.mel_hop
             e_s = min(e_m * self.mel_hop, audio.size(1))
-            audio_seg = audio[i, s_s:e_s]             # (t_samps,)
+            audio_seg = audio[i, s_s:e_s]
 
             mel_slices.append(mel_seg)
             audio_slices.append(audio_seg)
@@ -69,6 +77,7 @@ class DiffusionLightningModule(pl.LightningModule):
         tgt_s = min(a.size(0) for a in audio_slices)
         audio_slice = torch.stack([a[:tgt_s] for a in audio_slices], dim=0)
         return mel_slice, audio_slice
+
 
 
     def forward(self, emotion_embedding, speaker_embedding):
@@ -114,8 +123,9 @@ class DiffusionLightningModule(pl.LightningModule):
         # 3) emotion condition (B,1024)
         emo = batch['emotion_emb'].detach().squeeze(1)  # (B,1024)
         # 4) build condition token (B,1,1536)
-        cond = torch.cat([emo, speaker], dim=1)
-        cond = self.embeddingTransform(cond).unsqueeze(1)
+        emo_token = self.emo_mlp(emo)       # [B, C]
+        spk_token = self.spk_mlp(speaker)       # [B, C]
+        cond = torch.cat([emo_token, spk_token], dim=1).unsqueeze(1)
 
         return true_latents.to(cond.device), cond
 
@@ -150,9 +160,8 @@ class DiffusionLightningModule(pl.LightningModule):
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val_cosine_sim', cosine_sim, on_step=False, on_epoch=True, prog_bar=True)
         with torch.no_grad():
-            pred_v, cond = self.extract_latents_and_emotion(batch)  # pred_v is teacher target here
             # get UNet prediction at midpoint t for logging (already computed as part of loss if you want)
-            self.log("val_style_norm_target", pred_v.view(pred_v.size(0), -1).norm(dim=1).mean(), prog_bar=False)
+            self.log("val_style_norm_target", true_latents.view(true_latents.size(0), -1).norm(dim=1).mean(), prog_bar=False)
 
         return loss
 
@@ -168,6 +177,6 @@ class DiffusionLightningModule(pl.LightningModule):
             [{"params": decay, "weight_decay": 0.01, "lr": lr},
             {"params": no_decay, "weight_decay": 0.0,  "lr": lr}]
         )
-        warmup_steps = 50_000
+        warmup_steps = 55000
         scheduler = LambdaLR(optimizer, lambda s: s / max(1, warmup_steps) if s < warmup_steps else 1.0)
         return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step", "frequency": 1}}

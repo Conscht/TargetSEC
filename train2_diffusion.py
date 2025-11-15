@@ -18,9 +18,8 @@ pretrained_style_encoder = MelStyleEncoder(style_config)
 pretrained_style_encoder.load_state_dict(torch.load("/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
 pretrained_style_encoder.eval()
 
-# checkpoint = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints\diffusion_model_training-06-19_08-43-27-latest.ckpt"
+# checkpoint = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints\diffusion_model_training-11-14_02-28-59-latest.ckpt"
 checkpoint = None
-
 
 def main():
     pl.seed_everything(1234)
@@ -37,10 +36,10 @@ def main():
         "training": {
             "learning_rate": 3e-5,
             "batch_size": 32,
-            "cfg_prob": 0.1,  # DreamVoice-style train-time CFG rate
+            "cfg_prob": 0.3,  # DreamVoice-style train-time CFG rate
         },
         "inference": {"guidance_scale": 3.0, "guidance_rescale": 0.7},
-        "cross_attention_dim": 1536,  # 1024 emo + 512 spk
+        "cross_attention_dim": 256,  # 1024 emo + 512 spk, we down scale
     }
 
     train_loader, val_loader = create_dataloaders(batch_size=config['training']['batch_size'])

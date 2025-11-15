@@ -51,7 +51,7 @@ class AudioDiffusion(nn.Module):
             prediction_type="v_prediction",
             clip_sample=False,
             timestep_spacing="trailing",
-            # rescale_betas_zero_snr=True
+            rescale_betas_zero_snr=True
         )
         self.inference_scheduler = deepcopy(self.noise_scheduler)
 
