@@ -10,7 +10,6 @@ from processing.dataset_diffusion import MelSpectrogramDataset, collate_fn, crea
 from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
 from src.diffusion_module_fixed import DiffusionLightningModule
-from src.DiffusionCallback import AudioSampleCallback
 
 
 # Initialize the pretrained style encoder
@@ -22,7 +21,8 @@ pretrained_style_encoder.eval()
 checkpoint = None
 
 def main():
-    pl.seed_everything(1234)
+    seed = 1234
+    pl.seed_everything(seed, workers=True)
     torch.set_float32_matmul_precision("high")
 
     num_gpus = torch.cuda.device_count()

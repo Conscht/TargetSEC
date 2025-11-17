@@ -10,7 +10,10 @@ from torch.optim import AdamW
 import numpy as np
 
 class DiffusionLightningModule(pl.LightningModule):
-    def __init__(self, style_encoder, config, unet_model_config_path="config/diffusion_model_config2.json", pretrained_unet=None):
+    def __init__(self, style_encoder, config,
+                 unet_model_config_path="config/diffusion_model_config2.json",
+                 pretrained_unet=None,
+                 style_stats_path="style_stats.pt"):
         super(DiffusionLightningModule, self).__init__()
 
         self.config = config
@@ -18,33 +21,38 @@ class DiffusionLightningModule(pl.LightningModule):
         self.diffusion_model = AudioDiffusion(
             unet_model_config_path=unet_model_config_path,
             unet_model_name=pretrained_unet,
-            snr_gamma=1,
+            snr_gamma=None,
             cfg_prob=self.config["training"].get("cfg_prob", 0.1)
         )
-        
 
         self.sr      = 16000
         self.mel_hop = 256
 
-        self.segment_size = 125    # 0.5 secs in Mel Spec Units: 32 * 256 = 8.192 (16kHz)
+        self.segment_size = 125
         self.emo_mlp = nn.Sequential(
-        nn.Linear(1024, 128),
-        nn.SiLU(),
-        nn.Linear(128, 128)
+            nn.Linear(1024, 128),
+            nn.SiLU(),
+            nn.Linear(128, 128)
         )
 
         self.spk_mlp = nn.Sequential(
             nn.Linear(512, 128),
             nn.SiLU(),
-            nn.Linear(128,128)
+            nn.Linear(128, 128)
         )
-
 
         self.style_encoder = style_encoder.eval()
         for p in self.style_encoder.parameters():
             p.requires_grad = False
 
-        self.save_hyperparameters(config) 
+        # 🔹 NEW: load style mean / std and register as buffers
+        stats = torch.load(style_stats_path, map_location="cpu")
+        style_mean = stats["mean"].view(1, -1)   # (1, C)
+        style_std  = stats["std"].view(1, -1)    # (1, C)
+        self.register_buffer("style_mean", style_mean)
+        self.register_buffer("style_std", style_std)
+
+        self.save_hyperparameters(config)
 
     def _rand_mel_audio_slice(self, mel, mel_len, audio):
         B, Tm, n_mels = mel.shape
@@ -81,26 +89,26 @@ class DiffusionLightningModule(pl.LightningModule):
 
 
     def forward(self, emotion_embedding, speaker_embedding):
-        # emotion_embedding = F.normalize(emotion_embedding, p=2, dim=-1)
-        # speaker_embedding = F.normalize(speaker_embedding, p=2, dim=-1)
-
-        emotion_embedding = emotion_embedding.squeeze() 
+        emotion_embedding = emotion_embedding.squeeze()
         speaker_embedding = speaker_embedding.squeeze()
 
-        # Now make sure both are 2D: [batch, features]
         if emotion_embedding.dim() == 1:
             emotion_embedding = emotion_embedding.unsqueeze(0)
         if speaker_embedding.dim() == 1:
             speaker_embedding = speaker_embedding.unsqueeze(0)
 
-        ldm_condition = torch.cat([emotion_embedding, speaker_embedding], dim=1)
-        ldm_condition = self.embeddingTransform(ldm_condition.unsqueeze(1))
+        emo_token = self.emo_mlp(emotion_embedding)   # (B,128)
+        spk_token = self.spk_mlp(speaker_embedding)   # (B,128)
+        ldm_condition = torch.cat([emo_token, spk_token], dim=1).unsqueeze(1)  # (B,1,256)
 
-        latents = self.diffusion_model.inference(ldm_condition)
+        latents_norm = self.diffusion_model.inference(ldm_condition)  # (B, C, 1, 1) or (B,C)
         batchsize = ldm_condition.shape[0]
-        latents = latents.view(batchsize, -1)
+        latents_norm = latents_norm.view(batchsize, -1)               # (B, C)
 
-        return latents
+        # 🔹 denormalize back to original style space
+        style = latents_norm * self.style_std + self.style_mean       # (B, C)
+
+        return style
     
     def check_for_nan_inf(self, tensor, name):
         if torch.isnan(tensor).any() or torch.isinf(tensor).any():
@@ -118,7 +126,11 @@ class DiffusionLightningModule(pl.LightningModule):
         # 2) style target from mel slice (teacher)
         with torch.no_grad():
             style = self.style_encoder(mel_slice)        # (B,128)
-        true_latents = style.unsqueeze(-1).unsqueeze(-1)  # (B,128,1,1)
+
+        # 🔹 normalize into diffusion space
+        style_norm = (style - self.style_mean) / (self.style_std + 1e-6)  # (B,128)
+
+        true_latents = style_norm.unsqueeze(-1).unsqueeze(-1) 
 
         # 3) emotion condition (B,1024)
         emo = batch['emotion_emb'].detach().squeeze(1)  # (B,1024)
@@ -136,8 +148,6 @@ class DiffusionLightningModule(pl.LightningModule):
             return None 
         batch = {k: v.to(self.device, non_blocking=True) for k, v in batch.items()}
 
-        torch.manual_seed(self.current_epoch + 42) 
-
         true_latents, emotion = self.extract_latents_and_emotion(batch)
         loss, cosine_sim = self.diffusion_model(true_latents, emotion)
 
@@ -152,8 +162,6 @@ class DiffusionLightningModule(pl.LightningModule):
             return None  # Skip bad batch
         batch = {k: v.to(self.device, non_blocking=True) for k, v in batch.items()}
 
-        torch.manual_seed(42)
-        np.random.seed(42)
         
         true_latents, emotion = self.extract_latents_and_emotion(batch)
         loss, cosine_sim = self.diffusion_model(true_latents, emotion, validation_mode=True)

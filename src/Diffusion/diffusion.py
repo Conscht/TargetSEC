@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from copy import deepcopy
 
-from diffusers import DDPMScheduler, UNet2DConditionModel
+from diffusers import DDIMScheduler, UNet2DConditionModel
 from processing.diffusion_utils import FixedEmbedding, rescale_noise_cfg
 
 class AudioDiffusion(nn.Module):
@@ -43,7 +43,7 @@ class AudioDiffusion(nn.Module):
         self.snr_gamma = snr_gamma
 
         # https://huggingface.co/docs/diffusers/v0.14.0/en/api/schedulers/overview
-        self.noise_scheduler = DDPMScheduler(
+        self.noise_scheduler = DDIMScheduler(
             num_train_timesteps=1000,
             beta_start=0.0001,
             beta_end=0.02,
@@ -215,7 +215,7 @@ class AudioDiffusion(nn.Module):
 
 
     @torch.no_grad()
-    def inference(self, embeddings, inference_scheduler=None, num_steps=100, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
+    def inference(self, embeddings, inference_scheduler=None, num_steps=50, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
         device = embeddings.device
         classifier_free_guidance = guidance_scale > 1.0
         batch_size = embeddings.size(0) * num_samples_per_prompt
