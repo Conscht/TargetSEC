@@ -39,7 +39,7 @@ def main():
             "cfg_prob": 0.3,  # DreamVoice-style train-time CFG rate
         },
         "inference": {"guidance_scale": 3.0, "guidance_rescale": 0.7},
-        "cross_attention_dim": 256,  # 1024 emo + 512 spk, we down scale
+        "cross_attention_dim": 512,  # 1024 emo + 512 spk, we down scale
     }
 
     train_loader, val_loader = create_dataloaders(batch_size=config['training']['batch_size'])

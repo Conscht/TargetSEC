@@ -12,8 +12,8 @@ from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
 from src.decoder.decoder import Generator, DiscriminatorS, MultiPeriodDiscriminator
 
-# checkpoint = "/data/rajprabhu/dataset/1auga/ba-constantin-ldm/checkpoints_synthesizer/synthesizer_training_speakr-10-04_00-58-40-latest.ckpt"
-checkpoint = None
+checkpoint = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints_synthesizer\synthesizer_training_speakr-05-31_23-30-59-latest.ckpt"
+#checkpoint = None
 config = {
     "generator": {
         "input_dim": 768,  
@@ -36,9 +36,9 @@ config = {
         "mel_fmax": None,
     },
     "training": {
-            "learning_rate": 2e-4,
-            "batch_size": 16,
-        }
+            "learning_rate": 1e-4,
+            "batch_size": 8,
+        } 
 }
 
 

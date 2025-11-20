@@ -5,6 +5,7 @@ import torch
 
 from torch import nn
 from processing.preprocessor import get_mel_from_wav, _stft
+# from processing.fast_mel import db_transform, mel_spec_transform
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from test_audio import calculate_vmos
@@ -23,8 +24,8 @@ class SynthesizerLightningModule(pl.LightningModule):
         self.config = config
         self.automatic_optimization = False
 
-        self.audio_time = 1.5
-        self.segment_size = 75
+        self.audio_time = 2
+        self.segment_size = 100
         self.dict = nn.Embedding(100, 128)
         self.stft = _stft.to(device)
 
@@ -53,6 +54,12 @@ class SynthesizerLightningModule(pl.LightningModule):
         y_hat_mel = get_mel_from_wav(y_hat_audio, self.stft)
         y_hat_mel = torch.from_numpy(y_hat_mel).to(y_audio.device)
         return y_hat_mel
+    
+    # def compute_mel_loss(self, y_hat_audio, y_audio):
+    #     y_hat_mel = db_transform(mel_spec_transform(y_hat_audio))
+    #     y_mel = db_transform(mel_spec_transform(y_audio))
+
+    #     return y_hat_mel, y_mel
 
     def shared_step(self, batch):
         raw_audio, mel_spec = batch['audio'], batch['mel_spectrogram']
@@ -92,6 +99,8 @@ class SynthesizerLightningModule(pl.LightningModule):
         return y_audio, y_hat_audio, mel_loss
 
     def training_step(self, batch, batch_idx):
+        if batch is None:
+            return
         y_audio, y_hat_audio, mel_loss = self.shared_step(batch)
         batch_size = y_audio.size(0)
 
@@ -147,6 +156,9 @@ class SynthesizerLightningModule(pl.LightningModule):
             return total_loss
 
     def validation_step(self, batch, batch_idx):
+        if batch is None:
+            return
+           
         y_audio, y_hat_audio, mel_loss = self.shared_step(batch)
         batch_size = y_audio.size(0)
 
@@ -188,6 +200,8 @@ class SynthesizerLightningModule(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         mel_spec = batch['mel_spectrogram']
+        # print(f"[Batch {batch_idx}] mel_spec shape: {mel_spec.shape}")  
+
         linguistic_emb, _ = torch.nn.utils.rnn.pad_packed_sequence(batch['hubert'], batch_first=True)
         speaker_emb = batch['speaker_emb']
 

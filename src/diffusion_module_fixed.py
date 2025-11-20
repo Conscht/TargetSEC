@@ -30,15 +30,15 @@ class DiffusionLightningModule(pl.LightningModule):
 
         self.segment_size = 125
         self.emo_mlp = nn.Sequential(
-            nn.Linear(1024, 128),
+            nn.Linear(1024, 256),
             nn.SiLU(),
-            nn.Linear(128, 128)
+            nn.Linear(256, 256)
         )
 
         self.spk_mlp = nn.Sequential(
-            nn.Linear(512, 128),
+            nn.Linear(512, 256),
             nn.SiLU(),
-            nn.Linear(128, 128)
+            nn.Linear(256, 256)
         )
 
         self.style_encoder = style_encoder.eval()

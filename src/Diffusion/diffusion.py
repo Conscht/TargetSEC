@@ -215,7 +215,7 @@ class AudioDiffusion(nn.Module):
 
 
     @torch.no_grad()
-    def inference(self, embeddings, inference_scheduler=None, num_steps=50, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
+    def inference(self, embeddings, inference_scheduler=None, num_steps=80, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
         device = embeddings.device
         classifier_free_guidance = guidance_scale > 1.0
         batch_size = embeddings.size(0) * num_samples_per_prompt

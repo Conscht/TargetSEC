@@ -75,11 +75,12 @@ def process_directory(audio_directory, save_directory, sr=16000, n_fft=1024, hop
                 save_dir = os.path.join(save_directory, relative_path)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
-                audio_to_mel(path_to_audio, save_dir, sr, n_fft, hop_length, win_length, n_mels, fmax, max_seq_len)
+                audio_to_mel(path_to_audio, save_dir, sr, max_seq_len)
+
                 print(f'Processed {file_name}')
 
-# audio_directory = '/export/home/1auga/infhome/Documents/ba-constantin-ldm/audio'
-# save_directory = '/export/home/1auga/infhome/Documents/ba-constantin-ldm/mel_spectrograms'
+# audio_directory = r'C:\Users\Conscht\Documents\New folder\Audio\Audio'
+# save_directory = r'C:\Users\Conscht\Documents\New folder\mel_spectograms'
 # process_directory(audio_directory, save_directory)
 
 
