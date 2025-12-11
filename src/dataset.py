@@ -1,37 +1,43 @@
 import os
 import torch
-from torch.utils.data import Dataset
-import librosa
+from torch.utils.data import Dataset, DataLoader, random_split
 import torchaudio
 import numpy as np
-from torch.utils.data import DataLoader, random_split
 import ast
-import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_sequence
+
+# ---- paths for cluster ----
+DEFAULT_TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Train"
+DEFAULT_AUDIO_DIR  = "/sc/home/constantin.auga/New folder/Audio/Audio"
+DEFAULT_META_TRAIN = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
+
+TARGET_N_MELS = 80
 
 
 class MelSpectrogramDataset(Dataset):
-    def __init__(self, tensor_directory, embedding_file="/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt", transform=None):
-        self.audio_directory = '/Users/Conscht/Documents/New folder/Audio/Audio'
-        self.arousal_data = 'empty'
+    def __init__(self,
+                 tensor_directory: str,
+                 embedding_file: str = DEFAULT_META_TRAIN,
+                 transform=None):
+        self.audio_directory = DEFAULT_AUDIO_DIR
         self.tensor_directory = tensor_directory
         self.transform = transform
-        self.file_names = [f for f in os.listdir(tensor_directory) if f.endswith('_mel.pt')]
+
+        self.file_names = [f for f in os.listdir(tensor_directory)
+                           if f.endswith("_mel.pt")]
+        self.file_names.sort()
+
         self.embeddings = self.load_embeddings(embedding_file)
-        self.expected_hubert_length = 100
-        self.expected_mel_length = 120
-        self.expected_audio_length = 120 * 256
-        self.counter = 0
         self.skipped_samples = 0
 
     def load_embeddings(self, embedding_file):
         embeddings = {}
-        with open(embedding_file, 'r') as f:
+        with open(embedding_file, "r") as f:
             for line in f:
                 data = ast.literal_eval(line.strip())
-                audio_key = os.path.basename(data['audio'])
+                audio_key = os.path.basename(data["audio"])
                 embeddings[audio_key] = data
-        return embeddings    
+        return embeddings
 
     def __len__(self):
         return len(self.file_names)
@@ -39,43 +45,68 @@ class MelSpectrogramDataset(Dataset):
     def __getitem__(self, index):
         if torch.is_tensor(index):
             index = index.tolist()
-        
-        mel_file = os.path.join(self.tensor_directory, self.file_names[index])
-        mel_spectrogram = torch.load(mel_file)
 
-        if len(mel_spectrogram.shape) == 3 and mel_spectrogram.shape[0] == 1:
-            mel_spectrogram = mel_spectrogram.squeeze(0)
+        # ----- mel -----
+        mel_file = os.path.join(self.tensor_directory,
+                                self.file_names[index])
+        mel = torch.load(mel_file)
 
-        audio_file = os.path.join(self.audio_directory, self.file_names[index].replace('_mel.pt', '.wav'))
-        audio = self.load_audio(audio_file)
+        if isinstance(mel, np.ndarray):
+            mel = torch.from_numpy(mel)
 
-        audio_key = os.path.basename(audio_file)
-        if audio_key not in self.embeddings:
-            raise KeyError(f"Embedding for {audio_key} not found.")
+        # (1, 80, T) -> (80, T)
+        if mel.dim() == 3 and mel.size(0) == 1:
+            mel = mel.squeeze(0)
 
-        hubert_embedding = torch.tensor([int(x) for x in self.embeddings[audio_key]['hubert'].split()])
-        if hubert_embedding.size(0) < self.expected_hubert_length \
-            or mel_spectrogram.shape[1] < self.expected_mel_length \
-            or audio.size(0) < self.expected_audio_length:
-            
+        if mel.dim() != 2:
+            print(f"[WARN] Unexpected mel dim {mel.shape} in {mel_file}, skipping.")
             self.skipped_samples += 1
-            print(f"[INFO] Skipped sample: {audio_key} | HuBERT: {hubert_embedding.size(0)}, Mel: {mel_spectrogram.shape[1]}, Audio: {audio.size(0)})")
             return None
 
-        speaker_embedding = torch.tensor(self.embeddings[audio_key]['spkr_embeds'])
+        # At this point, from your scan, mel is (80, T) for all files.
+        # We want final shape (T, 80) for the model, same as old code.
+        if mel.size(0) == TARGET_N_MELS:
+            # (80, T) -> (T, 80)
+            mel = mel.transpose(0, 1).contiguous()
+        elif mel.size(1) == TARGET_N_MELS:
+            # already (T, 80)
+            pass
+        else:
+            print(f"[WARN] n_mels != {TARGET_N_MELS} for {mel_file}: {mel.shape}, skipping.")
+            self.skipped_samples += 1
+            return None
 
+        mel_spectrogram = mel  # (T, 80)
 
+        # ----- audio -----
+        audio_file = os.path.join(
+            self.audio_directory,
+            self.file_names[index].replace("_mel.pt", ".wav")
+        )
+        audio = self.load_audio(audio_file)  # 1D: (T_audio,)
 
+        # ----- embeddings -----
+        audio_key = os.path.basename(audio_file)
+        if audio_key not in self.embeddings:
+            print(f"[WARN] Embedding for {audio_key} not found, skipping.")
+            self.skipped_samples += 1
+            return None
 
-        mel_spectrogram = mel_spectrogram.transpose(1, 0)
+        hubert_embedding = torch.tensor(
+            [int(x) for x in self.embeddings[audio_key]["hubert"].split()],
+            dtype=torch.long,
+        )
+        speaker_embedding = torch.tensor(
+            self.embeddings[audio_key]["spkr_embeds"],
+            dtype=torch.float32,
+        )
 
         sample = {
-            'mel_spectrogram': mel_spectrogram,
-            'audio': audio,
-            'hubert': hubert_embedding,
-            'speaker_emb': speaker_embedding,
+            "mel_spectrogram": mel_spectrogram,  # (T_mel, 80)
+            "audio": audio,                      # (T_audio,)
+            "hubert": hubert_embedding,          # (L_hubert,)
+            "speaker_emb": speaker_embedding,    # (D_spkr,)
         }
-
         return sample
 
     def load_audio(self, file_path):
@@ -86,138 +117,122 @@ class MelSpectrogramDataset(Dataset):
             print(f"Failed to load file {file_path}: {str(e)}")
             raise
 
+
 def collate_fn(batch):
-    batch = [item for item in batch if item is not None]
+    # drop Nones
+    batch = [b for b in batch if b is not None]
     if len(batch) == 0:
         print("[WARNING] All items in batch were skipped.")
         return None
 
-    mel_spectrograms = [item['mel_spectrogram'] for item in batch]
-    audios = [item['audio'] for item in batch]
-    huberts = [item['hubert'] for item in batch]
-    speaker_embs = [item['speaker_emb'] for item in batch]
+    mels = [b["mel_spectrogram"] for b in batch]  # (T_mel, 80)
+    audios = [b["audio"] for b in batch]          # (T_audio,)
+    huberts = [b["hubert"] for b in batch]        # 1D
+    speaker_embs = [b["speaker_emb"] for b in batch]
 
+    # pad audio (time dim)
+    max_len_audio = max(a.size(0) for a in audios)
+    padded_audios = [
+        torch.cat([a, a.new_zeros(max_len_audio - a.size(0))], dim=0)
+        if a.size(0) < max_len_audio else a
+        for a in audios
+    ]
 
-    max_length = max(audio.shape[0] for audio in audios)
-    max_length_mel = max(mel_spec.shape[0] for mel_spec in mel_spectrograms)
+    # pad mel (time dim)
+    max_len_mel = max(m.size(0) for m in mels)
+    padded_mels = [
+        torch.cat(
+            [m, m.new_zeros(max_len_mel - m.size(0), m.size(1))],
+            dim=0
+        ) if m.size(0) < max_len_mel else m
+        for m in mels
+    ]
 
-    mel_original_lengths = [mel_spec.shape[0] for mel_spec in mel_spectrograms]
-    audio_original_lengths = [audio.shape[0] for audio in audios]
-
-    padded_audios = [torch.cat((audio, torch.zeros(max_length - audio.shape[0]))) if audio.shape[0] < max_length else audio for audio in audios]
-    mel_spectrograms = [torch.from_numpy(mel) if isinstance(mel, np.ndarray) else mel for mel in mel_spectrograms]
+    # pack HuBERT
     packed_huberts = pack_sequence(huberts, enforce_sorted=False)
-    padded_mels = [torch.cat((mel_spec, torch.zeros((max_length_mel - mel_spec.shape[0], mel_spec.shape[1])))) if mel_spec.shape[0] < max_length_mel else mel_spec for mel_spec in mel_spectrograms]
 
-    audio_attention_mask = [torch.cat((torch.ones(length), torch.zeros(max_length - length))) for length in audio_original_lengths]
-    audio_attention_mask = torch.stack(audio_attention_mask)
+    # audio attention mask (1 = real, 0 = padded)
+    audio_lengths = [a.size(0) for a in audios]
+    audio_attention_mask = torch.stack([
+        torch.cat([
+            torch.ones(L),
+            torch.zeros(max_len_audio - L)
+        ])
+        for L in audio_lengths
+    ])
 
     return {
-        'mel_spectrogram': torch.stack(padded_mels),
-        'audio': torch.stack(padded_audios),
-        'hubert': packed_huberts,
-        'speaker_emb': torch.stack(speaker_embs),
-        'arousal': NotImplemented,
-        'mel_original_lengths': mel_original_lengths,
-        'audio_attention_mask': audio_attention_mask
+        "mel_spectrogram": torch.stack(padded_mels),   # (B, T_mel_max, 80)
+        "audio": torch.stack(padded_audios),           # (B, T_audio_max)
+        "hubert": packed_huberts,
+        "speaker_emb": torch.stack(speaker_embs),
+        "arousal": NotImplemented,
+        "mel_original_lengths": audio_lengths,
+        "audio_attention_mask": audio_attention_mask,
     }
 
 
-
 def create_dataloaders(batch_size, val_split=0.2):
-    tensor_directory = '/Users/Conscht/Documents/New folder/mel_spectograms/Train'
+    tensor_directory = DEFAULT_TENSOR_DIR
 
     full_dataset = MelSpectrogramDataset(tensor_directory=tensor_directory)
-
+    print(f"[INFO] Total samples found: {len(full_dataset)}")
     print(f"[INFO] Skipped samples during dataset construction: {full_dataset.skipped_samples}")
 
     torch.manual_seed(42)
-    train_size = int(0.8 * len(full_dataset))
+    train_size = int((1.0 - val_split) * len(full_dataset))
     val_size = len(full_dataset) - train_size
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
-    
+
     train_loader = DataLoader(
-        train_dataset, 
-        batch_size=batch_size, 
-        shuffle=True, 
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
         num_workers=4,
         persistent_workers=True,
-        collate_fn=collate_fn  
+        collate_fn=collate_fn,
     )
-    
+
     val_loader = DataLoader(
-        val_dataset, 
-        batch_size=1, 
-        shuffle=False, 
+        val_dataset,
+        batch_size=1,
+        shuffle=False,
         num_workers=4,
         persistent_workers=True,
-        collate_fn=collate_fn 
+        collate_fn=collate_fn,
     )
-    
+
     return train_loader, val_loader
 
-def test_create_data_loader(batch_size, val_split=0.2):
-    tensor_directory = '/Users/Conscht/Documents/New folder/mel_spectograms/Test2'
+
+def test_create_data_loader(batch_size=1):
+    """
+    Create a DataLoader for the TEST set.
+
+    Uses the same MelSpectrogramDataset + collate_fn as training,
+    but with:
+      - test tensor directory (mel_spectrograms)
+      - test embedding file (Test*.txt)
+      - no random split, just full test set
+    """
+    tensor_directory = "/sc/home/constantin.auga/New folder/mel_spectograms/Test2"
+    embedding_file = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test2.txt"
 
 
-    full_dataset = MelSpectrogramDataset(tensor_directory=tensor_directory, embedding_file="/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/Test2.txt")
-    torch.manual_seed(42)
-    test_size = int(len(full_dataset))
-    _ = 0
-    test_dataset, _ = random_split(full_dataset, [test_size, _])
-
-
-    
-    test_loader = DataLoader(
-        test_dataset, 
-        batch_size=1, 
-        shuffle=False, 
-        num_workers=4,
-        collate_fn=collate_fn  
+    full_dataset = MelSpectrogramDataset(
+        tensor_directory=tensor_directory,
+        embedding_file=embedding_file,
     )
 
-    
+    print(f"[INFO] Test samples found: {len(full_dataset)}")
+    print(f"[INFO] Skipped samples during test dataset construction: {full_dataset.skipped_samples}")
+
+    test_loader = DataLoader(
+        full_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        collate_fn=collate_fn,
+    )
+
     return test_loader
-
-
-
-import os
-import random
-import shutil
-
-def split_dataset(input_directory, output_directory, train_ratio=0.8):
-    """
-    Splits the dataset into training and validation sets.
-
-    Args:
-        input_directory (str): Path to the directory containing the dataset.
-        output_directory (str): Path to the directory where the split datasets will be stored.
-        train_ratio (float): Ratio of the dataset to be used for training. The rest will be used for validation.
-    """
-    # Get all files in the input directory
-    all_files = [f for f in os.listdir(input_directory) if os.path.isfile(os.path.join(input_directory, f))]
-    random.shuffle(all_files)
-    
-    # Calculate the number of training samples
-    num_train = int(len(all_files) * train_ratio)
-    
-    # Split the files into training and validation sets
-    train_files = all_files[:num_train]
-    val_files = all_files[num_train:]
-    
-    # Create output directories for train and val sets
-    train_directory = os.path.join(output_directory, 'train')
-    val_directory = os.path.join(output_directory, 'val')
-    os.makedirs(train_directory, exist_ok=True)
-    os.makedirs(val_directory, exist_ok=True)
-    
-    # Move the files to the respective directories
-    for f in train_files:
-        shutil.move(os.path.join(input_directory, f), os.path.join(train_directory, f))
-    for f in val_files:
-        shutil.move(os.path.join(input_directory, f), os.path.join(val_directory, f))
-
-    print(f'Training files: {len(train_files)}')
-    print(f'Validation files: {len(val_files)}')
-
-
