@@ -77,13 +77,12 @@ class SynthesizerLightningModule(pl.LightningModule):
 
             audio_seg = raw_audio[i, start_sample:end_sample]  # (<= win_audio,)
 
-            # pad to exactly win_audio
+            # pad to exactly win_audio using reflection to avoid hard silence at boundary
             if audio_seg.size(0) < win_audio:
                 pad_len = win_audio - audio_seg.size(0)
-                audio_seg = torch.cat(
-                    [audio_seg, audio_seg.new_zeros(pad_len)],
-                    dim=0
-                )
+                audio_seg = torch.nn.functional.pad(
+                    audio_seg.unsqueeze(0).unsqueeze(0), (0, pad_len), mode='reflect'
+                ).squeeze(0).squeeze(0)
 
             audio_segments.append(audio_seg.unsqueeze(0))
 
@@ -99,10 +98,9 @@ class SynthesizerLightningModule(pl.LightningModule):
 
             if mel_seg.size(0) < win_mel:
                 pad_len = win_mel - mel_seg.size(0)
-                mel_seg = torch.cat(
-                    [mel_seg, mel_seg.new_zeros(pad_len, n_mels)],
-                    dim=0
-                )
+                mel_seg = torch.nn.functional.pad(
+                    mel_seg.unsqueeze(0).permute(0, 2, 1), (0, pad_len), mode='reflect'
+                ).permute(0, 2, 1).squeeze(0)
 
             mel_segments.append(mel_seg.unsqueeze(0))
 
@@ -130,9 +128,9 @@ class SynthesizerLightningModule(pl.LightningModule):
         y_audio, mel_segment = self.slice_audio_and_mel(raw_audio, mel_spec, start_id)
         # mel_segment: (B, T_mel_win, n_mels)
 
-        # 4) style encoder on mel
-        with torch.no_grad():
-            style_emb = self.style_encoder(mel_segment)
+        # 4) style encoder on mel — fine-tuned end-to-end at lower LR
+        style_emb = self.style_encoder(mel_segment)
+        self.log('style_emb_std', style_emb.detach().std(), prog_bar=False)
 
         x = broadcast_embeddings(x, speaker_emb, style_emb)
         y_hat_audio = self.decoder(x).squeeze(1)  # (B, win_audio)
@@ -269,7 +267,15 @@ class SynthesizerLightningModule(pl.LightningModule):
 
         x = self.dict(linguistic_emb).transpose(1, 2)
         with torch.no_grad():
-            style = self.style_encoder(mel_spec)
+            # Extract style from a center 2.5s window, matching training distribution
+            win_mel = self.segment_size * (16000 // 50) // 256  # ~156 frames
+            center = mel_spec.shape[1] // 2
+            half = win_mel // 2
+            start = max(0, center - half)
+            end = min(mel_spec.shape[1], start + win_mel)
+            start = max(0, end - win_mel)
+            mel_win = mel_spec[:, start:end, :]
+            style = self.style_encoder(mel_win)
         x = broadcast_embeddings(x, speaker_emb, style)
         output = self.decoder(x)
 
@@ -283,9 +289,12 @@ class SynthesizerLightningModule(pl.LightningModule):
         self.test_outputs.clear()
 
     def configure_optimizers(self):
+        base_lr = self.config['training']['learning_rate']
         g_optimizer = torch.optim.AdamW(
-            self.decoder.parameters(),
-            lr=self.config['training']['learning_rate'],
+            [
+                {'params': self.decoder.parameters(),      'lr': base_lr},
+                {'params': self.style_encoder.parameters(),'lr': base_lr * 0.1},
+            ],
             betas=(0.8, 0.99),
             weight_decay=0.01
         )

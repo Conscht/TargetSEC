@@ -34,7 +34,7 @@ config = {
         "win_length": 1024,
         "n_mel_channels": 80,
         "mel_fmin": 0.0,
-        "mel_fmax": None,
+        "mel_fmax": 8000.0,
     },
     "training": {
             "learning_rate": 1e-4,
@@ -49,7 +49,7 @@ config = {
 # Initialize the pretrained style encoder
 pretrained_style_encoder = MelStyleEncoder(style_config)
 pretrained_style_encoder.load_state_dict(torch.load("/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
-pretrained_style_encoder.eval()
+pretrained_style_encoder.train()  # fine-tuned end-to-end; .eval() would freeze BN/dropout
 
 gen = Generator(config)
 discrim = MultiPeriodDiscriminator()
