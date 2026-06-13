@@ -138,8 +138,8 @@ def compute_bounds(csv_path, audio_dir, num_pairs=16903):
 
 if __name__ == "__main__":
     # PATHS
-    CSV_PATH = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/labels_consensus.csv"
-    AUDIO_DIR = "/sc/home/constantin.auga/New folder/Audio/Audio"
+    CSV_PATH = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/labels_consensus.csv"
+    AUDIO_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
 
     upper, lower = compute_bounds(CSV_PATH, AUDIO_DIR)
 

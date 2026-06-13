@@ -285,12 +285,12 @@ def eval_gt_vs_converted_table(
 
 if __name__ == "__main__":
     # Set these to your paths
-    TEST_TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Test1"
-    GT_AUDIO_DIR    = "/sc/home/constantin.auga/New folder/Audio/Audio"
-    CONVERTED_ROOT  = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/wav"
+    TEST_TENSOR_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"
+    GT_AUDIO_DIR    = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
+    CONVERTED_ROOT  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/wav"
 
-    OUT_JSON = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/ecapa_gt_vs_converted.json"
-    OUT_CSV  = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/ecapa_gt_vs_converted.csv"
+    OUT_JSON = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/ecapa_gt_vs_converted.json"
+    OUT_CSV  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/ecapa_gt_vs_converted.csv"
 
     eval_gt_vs_converted_table(
         test_tensor_dir=TEST_TENSOR_DIR,

@@ -13,7 +13,7 @@
 # ------------------------------------------------------------------
 #SBATCH --gpus=a100:1
 
-cd "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM"
+cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm

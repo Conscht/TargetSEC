@@ -25,12 +25,12 @@ from Ablation.style_emo_mlp_module import StyleEmoLightningModule
 USE_SPEAKER_COND = False  # True = Emo+Spk MLP, False = Emo-Only MLP
 
 # Paths
-emotion_embedding_dir = r"/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
-checkpoint_synth = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
+emotion_embedding_dir = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
+checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
 
 # 🔹 PATH TO YOUR NEW MLP CHECKPOINT
 # (Paste the path to your .ckpt file from 'checkpoints_ablation_mlp' here)
-checkpoint_mlp = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_ablation_mlp/MLP_Baseline_noSpk_01-22_16-11-epoch=299-val_loss=0.564.ckpt"
+checkpoint_mlp = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_ablation_mlp/MLP_Baseline_noSpk_01-22_16-11-epoch=299-val_loss=0.564.ckpt"
 
 SAVE_ROOT = f"eval_outputs/test1_MLP_ABLAT_spk{USE_SPEAKER_COND}"   # Auto-rename output folder
 SAVE_WAV = True
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # 1. Style Encoder
     pretrained_style_encoder = MelStyleEncoder(style_config)
     pretrained_style_encoder.load_state_dict(torch.load(
-        "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style",
+        "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style",
         map_location="cpu"
     ))
     pretrained_style_encoder = pretrained_style_encoder.to(device).eval()
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         config=mlp_config,
         use_speaker_cond=USE_SPEAKER_COND,
         # Ensure this path is correct or passed relative to script location
-        style_stats_path="/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/style_stats_new.pt"
+        style_stats_path="/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/style_stats_new.pt"
     ).to(device).eval()
 
     # Freeze everything

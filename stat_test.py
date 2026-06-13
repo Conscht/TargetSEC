@@ -40,7 +40,7 @@ import json
 import numpy as np
 from collections import defaultdict
 
-path = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/eval_outputs/test1_MLP_ABLAT_spkFalse/metadata.jsonl"
+path = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/eval_outputs/test1_MLP_ABLAT_spkFalse/metadata.jsonl"
 
 # collect sq_err per batch_idx
 by_batch = defaultdict(list)

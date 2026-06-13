@@ -12,7 +12,7 @@ class StyleEmoLightningModule(pl.LightningModule):
         style_encoder,
         config,
         use_speaker_cond=False,  # <--- NEW FLAG
-        style_stats_path="/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/style_stats_new.pt",
+        style_stats_path="/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/style_stats_new.pt",
     ):
         super().__init__()
         self.config = config

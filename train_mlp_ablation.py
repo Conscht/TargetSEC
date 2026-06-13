@@ -19,8 +19,8 @@ from Ablation.style_emo_mlp_module import StyleEmoLightningModule  # Your new ML
 USE_SPEAKER_COND = True 
 
 # Paths (Adjust if needed)
-STYLE_ENCODER_PATH = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
-STYLE_STATS_PATH   = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/style_stats_new.pt"
+STYLE_ENCODER_PATH = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
+STYLE_STATS_PATH   = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/style_stats_new.pt"
 
 def main():
     seed = 1234

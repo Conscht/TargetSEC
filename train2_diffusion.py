@@ -30,7 +30,7 @@ from src.diffusion_module_fixed import DiffusionLightningModule
 USE_SPEAKER_COND = False 
 
 # Paths
-STYLE_ENCODER_PATH = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
+STYLE_ENCODER_PATH = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
 CHECKPOINT_PATH = None  # Add path if resuming training
 
 def main():
@@ -72,7 +72,7 @@ def main():
         style_encoder=pretrained_style_encoder, 
         config=config,
         use_speaker_cond=USE_SPEAKER_COND, # <--- Passes the flag here
-        style_stats_path="/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/style_stats_new.pt"
+        style_stats_path="/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/style_stats_new.pt"
     )
 
     logger = setup_logger("logs_ablation_ldm", base_name)

@@ -12,10 +12,10 @@ from config.stylespeech_model_config import style_config
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ==== adjust paths ====
-TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Train"
-AUDIO_DIR    = "/sc/home/constantin.auga/New folder/Audio/Audio"
-META_TRAIN   = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
-STYLE_CKPT   = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
+TENSOR_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Train"
+AUDIO_DIR    = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
+META_TRAIN   = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
+STYLE_CKPT   = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
 # ======================
 
 BATCH_SIZE   = 16

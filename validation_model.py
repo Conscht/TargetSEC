@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 
 
 # checkpoint = None
-checkpoint = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
+checkpoint = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
 
 
 config = {
@@ -46,7 +46,7 @@ config = {
 
 # Initialize the pretrained style encoder
 pretrained_style_encoder = MelStyleEncoder(style_config)
-pretrained_style_encoder.load_state_dict(torch.load("/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
+pretrained_style_encoder.load_state_dict(torch.load("/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
 pretrained_style_encoder.eval()
 
 gen = Generator(config)

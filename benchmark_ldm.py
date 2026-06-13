@@ -21,10 +21,10 @@ from src.emotion.emotion_encoder import process_func
 # -----------------------------
 # Paths / config
 # -----------------------------
-emotion_embedding_dir = r"/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
+emotion_embedding_dir = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
 
-checkpoint_synth = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
-checkpoint_ldm   = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_ablation_ldm/LDM_Ablation_wSpk_01-23_17-36-epoch=586-val_loss=0.47.ckpt"
+checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
+checkpoint_ldm   = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_ablation_ldm/LDM_Ablation_wSpk_01-23_17-36-epoch=586-val_loss=0.47.ckpt"
 
 # -----------------------------
 # NEW: Ablation flag
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     # ---- load style encoder ----
     pretrained_style_encoder = MelStyleEncoder(style_config)
     pretrained_style_encoder.load_state_dict(torch.load(
-        "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style",
+        "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style",
         map_location="cpu"
     ))
     pretrained_style_encoder = pretrained_style_encoder.to(device).eval()

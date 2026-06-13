@@ -21,12 +21,12 @@ from src.emotion.emotion_encoder import process_func
 # -----------------------------
 # Paths / config
 # -----------------------------
-emotion_embedding_dir = r"/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
-# checkpoint_synth = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=89-val_loss=17.24.ckpt"
-checkpoint_synth = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
-# checkpoint_synth = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-latest.ckpt"
-# checkpoint_ldm   = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints/diffusion_model_training-12-17_15-25-20-latest.ckpt"
-checkpoint_ldm = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints/768_emo_256_speaker_diffusion_model_training-12-20_14-58-39-latest.ckpt"
+emotion_embedding_dir = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
+# checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=89-val_loss=17.24.ckpt"
+checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
+# checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-latest.ckpt"
+# checkpoint_ldm   = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints/diffusion_model_training-12-17_15-25-20-latest.ckpt"
+checkpoint_ldm = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints/768_emo_256_speaker_diffusion_model_training-12-20_14-58-39-latest.ckpt"
 SAVE_ROOT = "eval_outputs/test1_768crossatt_synth_long_final_eval_guidance4__gs07"   # change name per run
 SAVE_WAV = True                               # set False if you don't want to save wavs
 SAVE_AUDIO_LIMIT = None                       # None = save all. Or int (e.g. 200) to save only first N utterances.
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     # ---- load models ----
     pretrained_style_encoder = MelStyleEncoder(style_config)
     pretrained_style_encoder.load_state_dict(torch.load(
-        "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style",
+        "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style",
         map_location="cpu"
     ))
     pretrained_style_encoder = pretrained_style_encoder.to(device).eval()

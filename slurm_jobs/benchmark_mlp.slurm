@@ -11,7 +11,7 @@
 # If you know A100 is in gpu-batch and you're allowed:
 #SBATCH -C "GPU_SKU:A100"
 
-cd "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM"
+cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 # env
 source ~/miniconda3/etc/profile.d/conda.sh

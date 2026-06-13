@@ -7,9 +7,9 @@ import ast
 from torch.nn.utils.rnn import pack_sequence
 
 # ---- paths for cluster ----
-DEFAULT_TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Test1"
-DEFAULT_AUDIO_DIR  = "/sc/home/constantin.auga/New folder/Audio/Audio"
-DEFAULT_META_TRAIN = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
+DEFAULT_TENSOR_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"
+DEFAULT_AUDIO_DIR  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
+DEFAULT_META_TRAIN = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
 
 TARGET_N_MELS = 80
 
@@ -238,8 +238,8 @@ def test_create_data_loader(batch_size=1):
       - test embedding file (Test*.txt)
       - no random split, just full test set
     """
-    tensor_directory = "/sc/home/constantin.auga/New folder/mel_spectograms/Test1"
-    embedding_file = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
+    tensor_directory = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"
+    embedding_file = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
 
 
     full_dataset = MelSpectrogramDataset(

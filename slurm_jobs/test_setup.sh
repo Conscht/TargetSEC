@@ -6,7 +6,7 @@ echo "║     ECAPA-TDNN Setup Verification Test                     ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 
-PROJECT_DIR="/sc/home/constantin.auga/New folder/Code/EmoConv-LDM"
+PROJECT_DIR="/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 cd "$PROJECT_DIR" || exit 1
 
 echo "✓ Location: $PROJECT_DIR"

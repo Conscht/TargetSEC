@@ -2,7 +2,7 @@
 # Quick start examples for ECAPA-TDNN speaker similarity evaluation
 
 # Make sure you're in the correct directory
-cd "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM"
+cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 # Activate the environment
 conda activate emoldm

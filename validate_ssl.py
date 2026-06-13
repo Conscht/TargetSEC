@@ -14,15 +14,15 @@ from src.diffusion_module_fixed import DiffusionLightningModule
 from src.SSL import EmoSSL, load_emotion_embeddings
 
 # Load emotion embeddings from the directory
-emotion_embedding_dir = r"/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
+emotion_embedding_dir = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
 
 emotion_embeddings = load_emotion_embeddings(emotion_embedding_dir)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-checkpoint_synth = r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/processing/synthesizer_training_wvmos_3.05-12-11_04-33-22-latest.ckpt"
+checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/processing/synthesizer_training_wvmos_3.05-12-11_04-33-22-latest.ckpt"
 
-checkpoint_ldm =   r"/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints/diffusion_model_training-11-19_11-32-04-epoch=149-val_loss=0.12.ckpt"
+checkpoint_ldm =   r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints/diffusion_model_training-11-19_11-32-04-epoch=149-val_loss=0.12.ckpt"
 # checkpoint_ldm = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints\diffusion_model_training-11-18_23-50-04-epoch=145-val_loss=0.1088_dream_diff.ckpt"
 # checkpoint_ldm = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints\diffusion_model_training-11-16_14-36-04-epoch=105-val_loss=0.12.ckpt"
 
@@ -76,7 +76,7 @@ config_2 = {
 
 # Initialize the pretrained style encoder
 pretrained_style_encoder = MelStyleEncoder(style_config)
-pretrained_style_encoder.load_state_dict(torch.load("/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
+pretrained_style_encoder.load_state_dict(torch.load("/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
 pretrained_style_encoder.eval()
 
 gen = Generator(config)

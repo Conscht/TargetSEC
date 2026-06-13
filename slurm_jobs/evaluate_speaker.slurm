@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-cd "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM"
+cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 mkdir -p logs
 

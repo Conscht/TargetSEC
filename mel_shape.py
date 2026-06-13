@@ -1,7 +1,7 @@
 import os, torch
 from collections import Counter
 
-mel_dir = "/sc/home/constantin.auga/New folder/mel_spectograms/Train"  # adjust if needed
+mel_dir = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Train"  # adjust if needed
 shapes = Counter()
 
 for fn in os.listdir(mel_dir):

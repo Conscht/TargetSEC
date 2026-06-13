@@ -8,7 +8,7 @@ model = get_wvmos(cuda=True)
 model.eval()
 
 for num in range(1, 8):
-    mos = model.calculate_dir("/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/wav/class_" + str(num), mean=True) 
+    mos = model.calculate_dir("/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/eval_outputs/test1_emo_spk_768crossatt_synth_long_final_eval_guidance4__gs07_guidance07/wav/class_" + str(num), mean=True) 
     print(mos)
     print("yeah" + str(num))
 # mos = model.calculate_one("/data/rajprabhu/dataset/1auga/ba-constantin-ldm/Eval_LDM_/1/0.wav")

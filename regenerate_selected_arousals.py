@@ -40,13 +40,13 @@ from src.decoder.decoder_modules import broadcast_embeddings
 # -----------------------------
 # Default paths (match your setup)
 # -----------------------------
-DEFAULT_AUDIO_DIR = "/sc/home/constantin.auga/New folder/Audio/Audio"
-DEFAULT_META_TEST = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
-DEFAULT_EMO_DIR   = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
+DEFAULT_AUDIO_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
+DEFAULT_META_TEST = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
+DEFAULT_EMO_DIR   = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
 
-DEFAULT_CHECKPOINT_SYNTH = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
-DEFAULT_CHECKPOINT_LDM   = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints/768_emo_256_speaker_diffusion_model_training-12-20_14-58-39-latest.ckpt"
-DEFAULT_PRETRAINED_STYLE = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
+DEFAULT_CHECKPOINT_SYNTH = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
+DEFAULT_CHECKPOINT_LDM   = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints/768_emo_256_speaker_diffusion_model_training-12-20_14-58-39-latest.ckpt"
+DEFAULT_PRETRAINED_STYLE = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
 
 # -----------------------------
 # Model configs (as in your benchmark script)
