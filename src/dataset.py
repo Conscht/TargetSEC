@@ -7,9 +7,9 @@ import ast
 from torch.nn.utils.rnn import pack_sequence
 
 # ---- paths for cluster ----
-DEFAULT_TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Train"
+DEFAULT_TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Test1"
 DEFAULT_AUDIO_DIR  = "/sc/home/constantin.auga/New folder/Audio/Audio"
-DEFAULT_META_TRAIN = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
+DEFAULT_META_TRAIN = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
 
 TARGET_N_MELS = 80
 
@@ -171,6 +171,29 @@ def collate_fn(batch):
         "audio_attention_mask": audio_attention_mask,
     }
 
+def collate_fn_stats(batch):
+    batch = [b for b in batch if b is not None]
+    if not batch:
+        return None
+
+    mels = [b["mel_spectrogram"] for b in batch]   # each is (T, 80), unpadded
+    mel_lengths = torch.tensor([m.size(0) for m in mels], dtype=torch.long)  # ✅ true mel lengths
+
+    max_len_mel = int(mel_lengths.max().item())
+    n_mels = mels[0].size(1)
+
+    padded_mels = [
+        torch.cat([m, m.new_zeros(max_len_mel - m.size(0), n_mels)], dim=0)
+        if m.size(0) < max_len_mel else m
+        for m in mels
+    ]
+
+    return {
+        "mel_spectrogram": torch.stack(padded_mels),   # (B, Tm, 80)
+        "mel_lengths": mel_lengths,                    # (B,)
+    }
+
+
 
 def create_dataloaders(batch_size, val_split=0.2):
     tensor_directory = DEFAULT_TENSOR_DIR
@@ -215,8 +238,8 @@ def test_create_data_loader(batch_size=1):
       - test embedding file (Test*.txt)
       - no random split, just full test set
     """
-    tensor_directory = "/sc/home/constantin.auga/New folder/mel_spectograms/Test2"
-    embedding_file = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test2.txt"
+    tensor_directory = "/sc/home/constantin.auga/New folder/mel_spectograms/Test1"
+    embedding_file = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
 
 
     full_dataset = MelSpectrogramDataset(
@@ -231,7 +254,7 @@ def test_create_data_loader(batch_size=1):
         full_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=4,
+        num_workers=6,
         collate_fn=collate_fn,
     )
 

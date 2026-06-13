@@ -12,8 +12,9 @@ from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
 from src.decoder.decoder import Generator, DiscriminatorS, MultiPeriodDiscriminator
 
-checkpoint = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints_synthesizer\synthesizer_training_speakr-05-31_23-30-59-latest.ckpt"
-#checkpoint = None
+# checkpoint = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-05-31_23-30-59-latest.ckpt"
+# checkpoint = "/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-10_17-48-40-latest.ckpt"
+checkpoint = None
 config = {
     "generator": {
         "input_dim": 768,  
@@ -23,7 +24,7 @@ config = {
         "upsample_initial_channel": 1024,   # increase the channels for feature extraction
         "upsample_kernel_sizes": [11,8,8,4,4],#"upsample_kernel_sizes": [16, 10, 8, 4] ,
         "gin_channels": 0,
-        "resblock": 1,
+        "resblock": "1",
 
     },
       "data": {
@@ -47,7 +48,7 @@ config = {
 
 # Initialize the pretrained style encoder
 pretrained_style_encoder = MelStyleEncoder(style_config)
-pretrained_style_encoder.load_state_dict(torch.load("/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
+pretrained_style_encoder.load_state_dict(torch.load("/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
 pretrained_style_encoder.eval()
 
 gen = Generator(config)

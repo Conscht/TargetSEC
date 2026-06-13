@@ -1,0 +1,17 @@
+# User requested
+eval_*/
+checkpoints*/
+logs*/
+lightning_logs/
+
+# Python defaults
+__pycache__/
+*.pyc
+
+sweep_outputs_test2/
+venv/
+.venv/
+env/
+.env
+StyleSpeech/
+/sc/home/constantin.auga/New folder/Code/EmoConv-LDM/venv/

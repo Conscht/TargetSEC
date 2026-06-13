@@ -6,11 +6,12 @@ import numpy as np
 
 HOP = 256  # 16kHz / 256 hop -> 62.5 fps Mel
 
+
 # ==== Default paths – adjust to your system ===============================
-DEFAULT_TENSOR_DIR = r"C:\Users\Conscht\Documents\New folder\mel_spectograms\Train"
-DEFAULT_AUDIO_DIR  = r"C:\Users\Conscht\Documents\New folder\Audio\Audio"
-DEFAULT_META_TRAIN = r"C:\Users\Conscht\Documents\New folder\Audio\MSP-Podcast-1.10\hubert-km100\parsed_with_spkrEmbeds\train.txt"
-DEFAULT_EMO_DIR    = r"C:\Users\Conscht\Documents\New folder\emotion_embeddings"
+DEFAULT_TENSOR_DIR = "/sc/home/constantin.auga/New folder/mel_spectograms/Train"
+DEFAULT_AUDIO_DIR  =  "/sc/home/constantin.auga/New folder/Audio/Audio"
+DEFAULT_META_TRAIN = "/sc/home/constantin.auga/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
+DEFAULT_EMO_DIR    = "/sc/home/constantin.auga/New folder/emotion_embeddings"
 DEFAULT_META_VAL   = None
 # ==========================================================================
 

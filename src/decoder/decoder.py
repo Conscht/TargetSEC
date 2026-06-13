@@ -76,6 +76,7 @@ class Generator(torch.nn.Module):
         upsample_initial_channel = config['generator']['upsample_initial_channel']
         upsample_kernel_sizes = config['generator']['upsample_kernel_sizes']
         resblock = config['generator']['resblock']
+        
 
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)

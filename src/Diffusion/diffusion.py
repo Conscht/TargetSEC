@@ -215,20 +215,30 @@ class AudioDiffusion(nn.Module):
 
 
     @torch.no_grad()
-    def inference(self, embeddings, inference_scheduler=None, num_steps=80, guidance_scale=3, num_samples_per_prompt=1, disable_progress=True):
+    def inference(
+        self,
+        embeddings,
+        inference_scheduler=None,
+        num_steps=100,
+        guidance_scale=4.0,
+        guidance_rescale_k=0.7,
+        num_samples_per_prompt=1,
+        seed=None,
+        disable_progress=True,
+    ):
         device = embeddings.device
         classifier_free_guidance = guidance_scale > 1.0
         batch_size = embeddings.size(0) * num_samples_per_prompt
 
+        # NEW: deterministic generator if seed is set
+        generator = None
+        if seed is not None:
+            generator = torch.Generator(device=device).manual_seed(int(seed))
 
-        
-        cond = embeddings.repeat_interleave(num_samples_per_prompt, 0).to(torch.float32)  # (B,1,1536)
+        cond = embeddings.repeat_interleave(num_samples_per_prompt, 0).to(torch.float32)
 
         num_channels_latents = self.unet.config.in_channels
-        
-        # Get random latent
 
-        # Match the size of latent size inside the loop
         if classifier_free_guidance:
             B, T, D = cond.shape
             uncond = self.null_token(B, T, device=cond.device, dtype=cond.dtype)
@@ -238,48 +248,45 @@ class AudioDiffusion(nn.Module):
 
         inference_scheduler = self.inference_scheduler
         inference_scheduler.set_timesteps(num_steps, device=device)
-
         timesteps = inference_scheduler.timesteps
 
         num_warmup_steps = len(timesteps) - num_steps * inference_scheduler.order
-        latents = self.prepare_latents(batch_size, inference_scheduler, num_channels_latents, emotion_embeddings.dtype, device)
 
-        
+        # NEW: pass generator
+        latents = self.prepare_latents(
+            batch_size, inference_scheduler, num_channels_latents,
+            emotion_embeddings.dtype, device, generator=generator
+        )
+
         progress_bar = tqdm(range(num_steps), disable=disable_progress)
 
-
-        # Gradualyl denoise sample
         for i, t in enumerate(timesteps):
             x = latents
             if classifier_free_guidance:
                 x = torch.cat([x, x], dim=0)
             x = inference_scheduler.scale_model_input(x, t)
-            
 
-            # Predict noise
-            noise_pred = self.unet(x,
-                                   t, 
-                                   encoder_hidden_states=emotion_embeddings,
-                                   encoder_attention_mask=None,
-                                   ).sample
+            noise_pred = self.unet(
+                x, t, encoder_hidden_states=emotion_embeddings, encoder_attention_mask=None
+            ).sample
 
             if classifier_free_guidance:
                 noise_pred_uncond, noise_pred_cond = noise_pred.chunk(2)
                 noise_pred_cfg = noise_pred_uncond + guidance_scale * (noise_pred_cond - noise_pred_uncond)
-                noise_pred = rescale_noise_cfg(noise_pred_cfg, noise_pred_cond, k=0.7)
-                
-            # remove noise, get sample with less noise
+                # NEW: configurable k
+                noise_pred = rescale_noise_cfg(noise_pred_cfg, noise_pred_cond, k=guidance_rescale_k)
+
             latents = inference_scheduler.step(noise_pred, t, latents).prev_sample
 
             if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % inference_scheduler.order == 0):
                 progress_bar.update(1)
 
-
         return latents
 
 
-    def prepare_latents(self, batch_size, inference_scheduler, num_channels_latents, dtype, device):
-        shape = (batch_size, num_channels_latents, 1, 1)  # Add an extra dimension for broadcasting to 2D
-        latents = torch.randn(shape, generator=None, device=device, dtype=dtype)
+
+    def prepare_latents(self, batch_size, inference_scheduler, num_channels_latents, dtype, device, generator=None):
+        shape = (batch_size, num_channels_latents, 1, 1)
+        latents = torch.randn(shape, generator=generator, device=device, dtype=dtype)
         latents = latents * inference_scheduler.init_noise_sigma
         return latents

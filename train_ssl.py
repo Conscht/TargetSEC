@@ -8,35 +8,28 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from src.dataset import MelSpectrogramDataset, collate_fn, create_dataloaders
-from src.synthesizer_module import SynthesizerLightningModule
-# from src.train_synthesizer_distributed import SynthesizerLightningModule
+from src.synthesizer_style_module import SynthesizerLightningModule
 from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
 from src.decoder.decoder import Generator, DiscriminatorS, MultiPeriodDiscriminator
 
-import torch
-from src.Style.style_encoder import MelStyleEncoder
 import json
 import src.Style.utils as utils
 import argparse
-# import StyleSpeech.models.StyleSpeech as testStyle
-from src.synthesizer_module import SynthesizerLightningModule
-from config.stylespeech_model_config import style_config
-from src.decoder.decoder import Generator, MultiPeriodDiscriminator
-from src.dataset import test_create_data_loader
 import pytorch_lightning as pl
-from src.diffusion_module import DiffusionLightningModule
+from src.diffusion_module_fixed import DiffusionLightningModule
 from src.SSL import EmoSSL
 import tensorflow as tf
 
 
-checkpoint_synth = "/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/synthesizer_training_speakr-10-04_00-58-40-latest.ckpt"
+checkpoint_synth = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints_synthesizer\synthesizer_training_speakr-06-01_20-52-57-latest.ckpt"
 
-checkpoint_ldm =   "/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/diffusion_model_training-10-08_15-59-43-latest.ckpt"
+checkpoint_ldm =   r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints\diffusion_model_training-06-19_23-35-50-latest.ckpt"
 checkpoint=None
+
 config = {
     "generator": {
-        "input_dim": 768,
+        "input_dim": 768,  
         "resblock_kernel_sizes": [3, 7, 11],
         "resblock_dilation_sizes": [(1, 3, 5), (1, 3, 5), (1, 3, 5)],
         "upsample_rates": [5,4,4,2,2],
@@ -56,8 +49,8 @@ config = {
         "mel_fmax": None,
     },
     "training": {
-            "learning_rate": 2e-4,
-            "batch_size": 16,
+            "learning_rate": 1e-4,
+            "batch_size": 8,
         }
 }
 

@@ -31,36 +31,64 @@ def slice_segments(x, ids_str, segment_size=4):
     return ret
 
 
-def rand_slice_segments(x, x_lengths=None, segment_size=4):
-    """Returns a random of the hubert embeddings.
 
-    Gets the batch size, timesteps, then calculate the max start index for each embedding.
-    We create b dimensional array with random start sizes, depending on x_lengths. Then call slice_segments on that
-    
-    Args:
-      () x: hubert embedding array [batch size, huberts]
-      (array) x_lengths: Array that saves length of each hubert array without padding
-      (int) segment_size: size of the segment to cut out
-    
-    Returns:
-      (torch(array)) ret: sliced segment of hubert emebddings
-      (int(array)) ids_str: start index of hubert embedding
+def rand_slice_segments(x, x_lengths=None, segment_size=4):
     """
-    if isinstance(x_lengths, list):
-        x_lengths = torch.tensor(x_lengths, device=x.device)
-    if (x.dim() == 2):
-      b, t = x.size()
-    elif (x.dim() == 3):
-      b, _, t = x.size()
+    x: (B, T) or (B, T, C)  - HuBERT ids or embeddings
+    x_lengths: tensor of shape (B,) with actual sequence lengths in T.
+    segment_size: desired number of frames (for 2.5s @ 50Hz -> 125).
+
+    Returns:
+      x_seg: (B, segment_size, ...)  – always fixed length (padded if needed)
+      start_ids: (B,) start index in original HuBERT time
+    """
+    if x.dim() == 3:
+        B, T, C = x.shape
+    elif x.dim() == 2:
+        B, T = x.shape
+        C = None
+    else:
+        raise ValueError(f"x must be 2D or 3D, got {x.shape}")
 
     if x_lengths is None:
-      x_lengths = t
-    ids_str_max = x_lengths - segment_size + 1 
-    ids_str = (torch.rand([b], device=x.device) * ids_str_max.to(x.device)).to(dtype=torch.long)
+        x_lengths = torch.full((B,), T, dtype=torch.long, device=x.device)
+    else:
+        x_lengths = x_lengths.to(x.device)
 
+    start_ids = []
+    seg_list = []
 
-    ret = slice_segments(x, ids_str, segment_size)
-    return ret, ids_str
+    for i in range(B):
+        L = int(x_lengths[i].item())
+        if L <= 0:
+            L = T
+
+        if L >= segment_size:
+            max_start = L - segment_size
+            s = torch.randint(0, max_start + 1, (1,), device=x.device).item()
+            seg_len = segment_size
+        else:
+            # sequence shorter than desired -> take from 0 and pad later
+            s = 0
+            seg_len = L
+
+        if x.dim() == 3:
+            seg = x[i, s:s + seg_len, :]  # (seg_len, C)
+            if seg_len < segment_size:
+                pad = seg.new_zeros(segment_size - seg_len, C)
+                seg = torch.cat([seg, pad], dim=0)
+        else:
+            seg = x[i, s:s + seg_len]     # (seg_len,)
+            if seg_len < segment_size:
+                pad = seg.new_zeros(segment_size - seg_len)
+                seg = torch.cat([seg, pad], dim=0)
+
+        seg_list.append(seg.unsqueeze(0))
+        start_ids.append(s)
+
+    x_seg = torch.cat(seg_list, dim=0)                      # (B, segment_size, C?) or (B, segment_size)
+    start_ids = torch.tensor(start_ids, device=x.device, dtype=torch.long)
+    return x_seg, start_ids
 
 
 def broadcast_single_embedding(hubert_emb, style_emb):

@@ -1,110 +1,106 @@
-# Assume 'Model' is the class where the entire model is defined which includes the Style Encoder
-from StyleSpeech.models.StyleSpeech import StyleSpeech
-import torch
-import librosa
-
+#!/usr/bin/env python
+# ---------------------------------------------------------------
+#  compare_diffusion_latents_mysetup.py
+# ---------------------------------------------------------------
+#  * requires the same environment your project already uses
+#  * adjust only the PATHS section
+# ---------------------------------------------------------------
+import os, glob, json, numpy as np
+import torch, librosa
+import torch.nn.functional as F
+from tqdm import tqdm
+# ----------------------------------------------------------------
+#  ---- YOUR  OWN  MODULES  --------------------------------------
+# ----------------------------------------------------------------
 from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
 from src.emotion.emotion_encoder import EmotionModel
+from src.diffusion_model_wholeseq import DiffusionLightningModule
+# ----------------------------------------------------------------
 
-from src.Diffusion.diffusion import AudioDiffusion
-from src.Diffusion.diffusion_module import DiffusionLightningModule
+# -----------------------  PATHS ---------------------------------
+ROOT              = r"C:\Users\Conscht\Documents\New folder\Audio\MSP-Podcast-1.10"  # <-- change if needed
+EMB_DIR           = f"{ROOT}/avgclass_emo_embeds/Train"               # 1.npy … 7.npy
 
+AUDIO_PATH        = r"C:\Users\Conscht\Documents\New folder\Audio\Audio"
+MEL_PATH          = r"C:\Users\Conscht\Documents\New folder\mel_spectograms\Train\MSP-PODCAST_0001_0049_mel.pt"
 
-# Prepare Audio
-tensor_path = "audio/train/MSP-PODCAST_1495_0163_0018_mel.pt"
-audio_path = "/data/rajprabhu/dataset/MSP-Podcast-1.10/Audio/MSP-PODCAST_1495_0163_0018.wav"
+STYLE_WGHT        = "/Users/Conscht/Documents/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
+DIFFUSION_CKPT    = r"C:\Users\Conscht\Documents\New folder\Code\EmoConv-LDM\checkpoints\diffusion_model_training-11-16_01-00-29-epoch=98-val_loss=0.07.ckpt"
 
-
-audio, _ = librosa.load(audio_path, sr=None)  
-waveform = torch.tensor(audio, dtype=torch.float32) 
-
-max_length = 16000
-if waveform.shape[0] < max_length:
-    padded_waveform = torch.cat((waveform, torch.zeros(max_length - waveform.shape[0])), dim=0)
-else:
-    padded_waveform = waveform[:max_length]
-
-# Ensure the waveform has the correct shape [batch_size, num_channels, sequence_length]
-padded_waveform = padded_waveform.unsqueeze(0)  # Add batch dimension
-input_data = torch.load(tensor_path)
-input_data = input_data.transpose(2,1)
-
-
-# Initialize the pretrained style encoder
-pretrained_style_encoder = MelStyleEncoder(style_config)
-pretrained_style_encoder.load_state_dict(torch.load("pre-trained_models/pre-trained_style"))
-pretrained_style_encoder.eval()
-# Initialize the emotion encoder
-emotion_encoder = EmotionModel.from_pretrained('audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim')
-emotion_encoder.eval()
-
-with torch.no_grad():
-    emo_embedding, rec_emo = emotion_encoder(padded_waveform)
-emo_embedding = emo_embedding.unsqueeze(1)  # (1, 1024) => Expected(1, 1, 1024)
-
-
-config = {
-    "training": {
-    "learning_rate": 1e-4,
-    "batch_size": 16
-    }
-}
-
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-
-model = DiffusionLightningModule.load_from_checkpoint("checkpoints/diffusion_model_training-07-22_11-17-20-epoch=59-val_loss=626.46.ckpt", 
-                                                      style_encoder=pretrained_style_encoder,  
-                                                      emotional_encoder=emotion_encoder, 
-                                                      config=config).to(device)
-
-model.eval()
-
-emo_embedding = emo_embedding.to(device)
-input_data = input_data.to(device)
-scheduler=(model.diffusion_model.inference_scheduler)
-with torch.no_grad():
-    model_pred = model.diffusion_model.inference(emo_embedding, inference_scheduler=scheduler, num_steps=40)
-    target = pretrained_style_encoder(input_data)
-    print("Trained Diff model", model_pred)
-    print("Trained Style model", target)
-
-print("MSE", torch.nn.functional.mse_loss(model_pred.float(), target.float(), reduction="mean"))
-
-
-import audeer
-import audonnx
+# -----------------------  DEVICE --------------------------------
+dev = "cuda" if torch.cuda.is_available() else "cpu"
+torch.set_grad_enabled(False)
+print(f"[INFO] device = {dev}")
+import os
+import random
 import numpy as np
-url = 'https://zenodo.org/record/6221127/files/w2v2-L-robust-12.6bc4a7fd-1.1.0.zip'
-cache_root = audeer.mkdir('cache')
-model_root = audeer.mkdir('model')
+import torch
 
-archive_path = audeer.download_url(url, cache_root, verbose=True)
-audeer.extract_archive(archive_path, model_root)
-model = audonnx.load(model_root)
+def seed_everything(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
 
-sampling_rate = 16000
-signal = np.random.normal(size=sampling_rate).astype(np.float32)
-prediction_audi  = model(signal, sampling_rate)["hidden_states"]
-reconginition  = model(signal, sampling_rate)["logits"]
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+seed_everything(42)
 
 
-reconginition= torch.from_numpy(reconginition).float()
-prediction_audi= torch.from_numpy(prediction_audi).float()
-prediction_audi = prediction_audi.to(device)
-reconginition = reconginition.to(device)
-rec_emo = rec_emo.to(device)
+# ================= 1.  LOAD  ENCODERS ===========================
+style_enc = MelStyleEncoder(style_config).to(dev).eval()
+style_enc.load_state_dict(torch.load(STYLE_WGHT, map_location=dev))
 
-print("prediction_audi", prediction_audi)
-print("Pred Emo Model", emo_embedding)
+emotion_enc = EmotionModel.from_pretrained(
+    "audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim"
+).to(dev).eval()
 
-print("prediction_audi dimension", reconginition)
-print("Emo Model dimension", rec_emo)
+# dummy cfg for Lightning:
+cfg = {"training": {"learning_rate": 1e-4, "batch_size": 16}}
+diff_lm = DiffusionLightningModule.load_from_checkpoint(
+            DIFFUSION_CKPT,
+            config=cfg,
+          ).to(dev).eval()
 
-emo_embedding = emo_embedding.squeeze(1)
-print("MSE", torch.nn.functional.mse_loss(prediction_audi, emo_embedding.float(), reduction="mean"))
-print("MSE Recognition", torch.nn.functional.mse_loss(rec_emo, reconginition.float(), reduction="mean"))
+# ===== 2.  GROUND-TRUTH  LATENT  FROM  REFERENCE  MEL ===========
+ref_mel = torch.load(MEL_PATH, map_location=dev)          # (T,80)
+ref_mel = torch.tensor(ref_mel, dtype=torch.float32).unsqueeze(0).transpose(1, 2).to(dev)
+latent_gt = style_enc(ref_mel).view(1, 128)               # (1,128)
+print("[OK] ground-truth style latent computed\n")
+
+# ----------  speaker vector (dummy 512-D zeros) -----------------
+spk_emb = torch.zeros(1, 512, device=dev)                 # replace if availablere
+
+# ----------  helper --------------------------------------------
+def cos(a, b): return F.cosine_similarity(a, b, dim=1).mean().item()
+
+# ================= 3.  LOOP  OVER  AROUSAL  CLASSES =============
+npy_files = sorted(glob.glob(os.path.join(EMB_DIR, "*.npy")))
+if not npy_files:
+    raise FileNotFoundError(f"No *.npy files in {EMB_DIR}")
+
+print(f"{'class':>6} | {'MSE':>9} | {'cos-sim':>7}")
+print("-"*28)
+
+
+for npy in sorted(glob.glob(os.path.join(EMB_DIR, "*.npy"))):  # reversed
+    cls = os.path.splitext(os.path.basename(npy))[0]
+    emo_vec = torch.from_numpy(np.load(npy)).to(dev).unsqueeze(0)  # (1,1024)
+
+    cond = torch.cat([emo_vec, spk_emb], dim=1).unsqueeze(1)       # (1, 1, 1536)
+
+    # ⬇️ Reset RNG before inference
+    seed_everything(42)
+
+    latent_pred = diff_lm.diffusion_model.inference(
+        cond, num_steps=100, guidance_scale=3.0
+    ).view(1, 128)
+
+    mse = F.mse_loss(latent_pred, latent_gt).item()
+    cs = cos(latent_pred, latent_gt)
+
+    print(f"{cls:>6} | {mse:9.4f} | {cs:7.3f}")

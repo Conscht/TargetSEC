@@ -23,4 +23,3 @@ def calculate_vmos(audio, batchid, Emoclass=None):
     sf.write(path, audio, samplerate=16000)
     mos = model.calculate_one(path) # infer MOS score for one audio 
     return mos
-

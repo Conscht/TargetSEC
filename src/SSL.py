@@ -14,6 +14,20 @@ from processing.preprocessor import get_mel_from_wav, _stft
 from src.emotion.emotion_encoder import process_func
 from test_audio import calculate_vmos
 
+import torch.nn.functional as F
+
+def get_pred_arousal(y_hat_audio: torch.Tensor, device):
+    """
+    y_hat_audio: (B, T) tensor
+    returns: (B,) arousal predictions from emotion recognizer
+    """
+    emo_pred = process_func(
+        y_hat_audio.detach().cpu().numpy(),
+        device=device,
+        embeddings=False
+    )  # expected (B,3)
+    return torch.tensor(emo_pred[:, 0], dtype=torch.float32, device=device)
+
 
 class EmoSSL(pl.LightningModule):
     def __init__(self, synthesizer, ldm, config):
@@ -178,17 +192,29 @@ class EmoSSL(pl.LightningModule):
 
         # Generate audio with decoder
         embedding = broadcast_embeddings(linguistic_emb, speaker_emb, style_emb)
-        print(embedding.shape, "shape final embedd")
 
         y_hat_audio = self.decoder(embedding).squeeze(1)  # (B, T)
 
+        with torch.inference_mode():
+            pred_ar = get_pred_arousal(y_hat_audio, device=device)  # (B,)
+        target_ar = torch.full_like(pred_ar, float(emotion_class))  # (B,)
+
+        mse_ar = F.mse_loss(pred_ar, target_ar)
+        mae_ar = torch.mean(torch.abs(pred_ar - target_ar))
+
+        # log
+        self.log(f"test_mse_arousal_class_{emotion_class}", mse_ar, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"test_mae_arousal_class_{emotion_class}", mae_ar, on_step=False, on_epoch=True, prog_bar=False)
+        
         # Calculate VMOS score for the synthesized audio
         vmos_scores = calculate_vmos(y_hat_audio.cpu(), batch_idx, emotion_class)
 
         # Log and store results
-        self.test_outputs.append({'vmos': vmos_scores})
-        self.log(f"test_vmos_class_{emotion_class}", vmos_scores, on_step=False, on_epoch=True, prog_bar=True)
-
+        self.test_outputs.append({
+        'vmos': vmos_scores,
+        'mse_arousal': mse_ar.detach().cpu(),
+        'mae_arousal': mae_ar.detach().cpu(),
+     })
         return {'vmos': vmos_scores}
 
 
