@@ -1,10 +1,12 @@
 """
-Training script for the HiFiGAN baseline synthesizer.
+Training script for the HiFiGAN baseline synthesizer — scalar arousal version.
 
-This trains a synthesizer that injects emotion embeddings directly (no style
-encoder), serving as the HiFiGAN [14] baseline for the human evaluation study.
-Checkpoints are saved to checkpoints_hifigan_baseline/ to avoid overwriting
-the TargetSEC synthesizer.
+Faithful reimplementation of [7]: emotion encoder = nn.Linear(1, 128) on
+scalar arousal derived from the audeering regression head (arousal in [0,1]).
+This matches [7]'s "simple trainable linear layers" on the scalar arousal label.
+
+Checkpoints saved to checkpoints_hifigan_baseline_scalar/ to preserve the
+previous 1024-dim version in checkpoints_hifigan_baseline/.
 """
 import torch
 import os
@@ -13,7 +15,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from src.dataset import MelSpectrogramDataset, collate_fn, create_dataloaders
+from src.dataset import MelSpectrogramDataset, collate_fn, create_dataloaders_with_emotion
 from src.synthesizer_hifigan_module import HiFiGANBaselineLightningModule
 from src.decoder.decoder import Generator, MultiPeriodDiscriminator
 
@@ -56,13 +58,13 @@ def main():
     num_gpus = torch.cuda.device_count()
     print(f"Number of GPUs available: {num_gpus}")
 
-    base_name = generate_base_name("hifigan_baseline")
-    train_loader, val_loader = create_dataloaders(batch_size=config['training']['batch_size'])
+    base_name = generate_base_name("hifigan_baseline_scalar")
+    train_loader, val_loader = create_dataloaders_with_emotion(batch_size=config['training']['batch_size'])
 
     model = HiFiGANBaselineLightningModule(decoder=gen, discriminator=discrim, config=config)
 
-    logger = setup_logger("logs_hifigan_baseline", base_name)
-    callbacks = setup_callbacks("checkpoints_hifigan_baseline", base_name)
+    logger = setup_logger("logs_hifigan_baseline_scalar", base_name)
+    callbacks = setup_callbacks("checkpoints_hifigan_baseline_scalar", base_name)
 
     trainer = Trainer(
         logger=logger,

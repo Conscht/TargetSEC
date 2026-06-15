@@ -10,6 +10,7 @@ from torch.nn.utils.rnn import pack_sequence
 DEFAULT_TENSOR_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"
 DEFAULT_AUDIO_DIR  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
 DEFAULT_META_TRAIN = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
+DEFAULT_EMO_DIR    = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/emotion_embeddings"
 
 TARGET_N_MELS = 80
 
@@ -18,17 +19,29 @@ class MelSpectrogramDataset(Dataset):
     def __init__(self,
                  tensor_directory: str,
                  embedding_file: str = DEFAULT_META_TRAIN,
-                 transform=None):
+                 transform=None,
+                 emo_dir: str = None):
         self.audio_directory = DEFAULT_AUDIO_DIR
         self.tensor_directory = tensor_directory
         self.transform = transform
+        self.emo_dir = emo_dir
 
         self.file_names = [f for f in os.listdir(tensor_directory)
                            if f.endswith("_mel.pt")]
         self.file_names.sort()
 
         self.embeddings = self.load_embeddings(embedding_file)
+        self.emo_map = self._load_emo_dir(emo_dir) if emo_dir else {}
         self.skipped_samples = 0
+
+    def _load_emo_dir(self, emo_dir):
+        d = {}
+        if not os.path.isdir(emo_dir):
+            return d
+        for fn in os.listdir(emo_dir):
+            if fn.endswith(".pt"):
+                d[fn[:-3]] = os.path.join(emo_dir, fn)
+        return d
 
     def load_embeddings(self, embedding_file):
         embeddings = {}
@@ -107,6 +120,17 @@ class MelSpectrogramDataset(Dataset):
             "hubert": hubert_embedding,          # (L_hubert,)
             "speaker_emb": speaker_embedding,    # (D_spkr,)
         }
+
+        if self.emo_map:
+            audio_key_base = os.path.splitext(os.path.basename(audio_file))[0]
+            if audio_key_base not in self.emo_map:
+                self.skipped_samples += 1
+                return None
+            emo = torch.load(self.emo_map[audio_key_base], map_location="cpu").float()
+            if emo.dim() > 1:
+                emo = emo.view(-1, emo.size(-1)).mean(dim=0)
+            sample["emotion_emb"] = emo  # (1024,)
+
         return sample
 
     def load_audio(self, file_path):
@@ -161,15 +185,19 @@ def collate_fn(batch):
         for L in audio_lengths
     ])
 
-    return {
+    out = {
         "mel_spectrogram": torch.stack(padded_mels),   # (B, T_mel_max, 80)
         "audio": torch.stack(padded_audios),           # (B, T_audio_max)
         "hubert": packed_huberts,
         "speaker_emb": torch.stack(speaker_embs),
-        "arousal": NotImplemented,
         "mel_original_lengths": audio_lengths,
         "audio_attention_mask": audio_attention_mask,
     }
+
+    if "emotion_emb" in batch[0]:
+        out["emotion_emb"] = torch.stack([b["emotion_emb"] for b in batch])  # (B, 1024)
+
+    return out
 
 def collate_fn_stats(batch):
     batch = [b for b in batch if b is not None]
@@ -225,6 +253,38 @@ def create_dataloaders(batch_size, val_split=0.2):
         collate_fn=collate_fn,
     )
 
+    return train_loader, val_loader
+
+
+def create_dataloaders_with_emotion(batch_size, val_split=0.2, emo_dir=DEFAULT_EMO_DIR):
+    """Like create_dataloaders but also returns emotion_emb in each batch."""
+    full_dataset = MelSpectrogramDataset(
+        tensor_directory=DEFAULT_TENSOR_DIR,
+        emo_dir=emo_dir,
+    )
+    print(f"[INFO] Total samples (with emo): {len(full_dataset)}")
+
+    torch.manual_seed(42)
+    train_size = int((1.0 - val_split) * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        persistent_workers=True,
+        collate_fn=collate_fn,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=4,
+        persistent_workers=True,
+        collate_fn=collate_fn,
+    )
     return train_loader, val_loader
 
 

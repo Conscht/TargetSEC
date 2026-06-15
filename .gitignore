@@ -4,6 +4,19 @@ checkpoints*/
 logs*/
 lightning_logs/
 
+# Large binary artifacts
+*.ckpt
+*.pt
+*.npz
+processing/*.ckpt
+
+# Data / generated outputs
+models/
+pretrained_models/
+LDM/
+labels_consensus.csv
+style_shift_cache.npz
+
 # Python defaults
 __pycache__/
 *.pyc

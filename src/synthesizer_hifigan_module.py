@@ -43,7 +43,8 @@ class HiFiGANBaselineLightningModule(pl.LightningModule):
         self.segment_size = 125    # HuBERT frames for 2.5s @ 50 Hz
         self.dict = nn.Embedding(100, 128)
         self.stft = _stft.to(device)
-        self.emo_proj = nn.Linear(1024, 128)   # direct emotion → style slot
+        # Scalar arousal [0,1] → 128-dim style slot, matching [7] (linear layers on scalar label)
+        self.emo_proj = nn.Linear(1, 128)
 
         self.test_outputs = []
         self.y_hat_emo_list = []
@@ -112,7 +113,7 @@ class HiFiGANBaselineLightningModule(pl.LightningModule):
             batch['hubert'], batch_first=True
         )
         speaker_emb = batch['speaker_emb']
-        emotion_emb = batch['emotion_emb']   # (B, 1024)
+        emotion_emb = batch['emotion_emb']   # (B, 1024) pre-computed hidden states
 
         x_ids, start_id = rand_slice_segments(
             linguistic_emb, x_lengths=lengths, segment_size=self.segment_size
@@ -122,8 +123,14 @@ class HiFiGANBaselineLightningModule(pl.LightningModule):
 
         y_audio, mel_segment = self.slice_audio_and_mel(raw_audio, mel_spec, start_id)
 
-        # direct emotion projection replaces style encoder
-        style_emb = self.emo_proj(emotion_emb)   # (B, 128)
+        # Derive scalar arousal from pre-computed 1024-dim embeddings via frozen regression head
+        # → output in [0,1]; same normalization used at inference (class c → (c-1)/6)
+        from src.emotion.emotion_encoder import emotion_model as _emo_model
+        with torch.no_grad():
+            arousal_scalar = _emo_model.classifier(
+                emotion_emb.float().to(next(_emo_model.parameters()).device)
+            )[:, 0:1].to(emotion_emb.device)   # (B, 1), arousal in [0,1]
+        style_emb = self.emo_proj(arousal_scalar)   # (B, 128)
 
         x = broadcast_embeddings(x, speaker_emb, style_emb)
         y_hat_audio = self.decoder(x).squeeze(1)
@@ -242,9 +249,13 @@ class HiFiGANBaselineLightningModule(pl.LightningModule):
         speaker_emb = batch['speaker_emb']
         emotion_emb = batch['emotion_emb']
 
-        x = self.dict(linguistic_emb).transpose(1, 2)
+        from src.emotion.emotion_encoder import emotion_model as _emo_model
         with torch.no_grad():
-            style_emb = self.emo_proj(emotion_emb)
+            arousal_scalar = _emo_model.classifier(
+                emotion_emb.float().to(next(_emo_model.parameters()).device)
+            )[:, 0:1].to(emotion_emb.device)
+            style_emb = self.emo_proj(arousal_scalar)
+        x = self.dict(linguistic_emb).transpose(1, 2)
         x = broadcast_embeddings(x, speaker_emb, style_emb)
         output = self.decoder(x)
 
