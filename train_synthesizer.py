@@ -1,3 +1,16 @@
+"""TargetSEC base synthesizer.
+
+Trains on MSP-Podcast Train, validates on Development (see src/dataset.py).
+Test1 is held out for benchmarking.
+
+Optimization settings match train_hifigan_baseline.py so the two systems differ
+by method, not by training budget:
+  lr 2e-4, batch 16, MPD(2,3,4,5,7,11) + MSD(3 scales), lambda_fm 2.
+Pass --learning_rate 1e-4 --batch_size 8 to restore the previous settings.
+
+    python train_synthesizer.py --seed 1234
+"""
+import argparse
 import torch
 import os
 from datetime import datetime
@@ -10,11 +23,8 @@ from src.synthesizer_style_module import SynthesizerLightningModule
 # from src.train_synthesizer_distributed import SynthesizerLightningModule
 from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
-from src.decoder.decoder import Generator, DiscriminatorS, MultiPeriodDiscriminator
+from src.decoder.decoder import Generator, CombinedDiscriminator
 
-# checkpoint = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-05-31_23-30-59-latest.ckpt"
-# checkpoint = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-10_17-48-40-latest.ckpt"
-checkpoint = None
 config = {
     "generator": {
         "input_dim": 768,  
@@ -37,36 +47,72 @@ config = {
         "mel_fmax": 8000.0,
     },
     "training": {
-            "learning_rate": 1e-4,
-            "batch_size": 8,
-        } 
+            "learning_rate": 2e-4,
+            "batch_size": 16,
+        }
 }
 
 
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--seed", type=int, default=1234,
+                   help="Seed; also names the run, checkpoint files and log dir.")
+    p.add_argument("--resume", default=None,
+                   help="Checkpoint to resume optimizer + epoch state from.")
+    p.add_argument("--max_epochs", type=int, default=400)
+    p.add_argument("--batch_size", type=int, default=config["training"]["batch_size"])
+    p.add_argument("--learning_rate", type=float, default=config["training"]["learning_rate"])
+    p.add_argument("--limit_val_batches", type=int, default=1000,
+                   help="Fixed-size validation subset (val loader is unshuffled).")
+    p.add_argument("--ser_loss", choices=["differentiable", "detached"],
+                   default="detached",
+                   help="Default 'detached': the CCC term is logged but carries no "
+                        "gradient, so the decoder is never optimised through the "
+                        "audeering model that also scores the benchmark. A live "
+                        "gradient drives L_abs below the metric's own noise floor "
+                        "(0.098 for SER vs human labels on real speech).")
+    p.add_argument("--unfreeze_style", action="store_true",
+                   help="Train the style encoder in stage 1 too, collapsing the "
+                        "frozen/unfrozen two-stage recipe into a single stage.")
+    return p.parse_args()
 
 
-
-# Initialize the pretrained style encoder
-pretrained_style_encoder = MelStyleEncoder(style_config)
-pretrained_style_encoder.load_state_dict(torch.load("/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
-pretrained_style_encoder.train()  # fine-tuned end-to-end; .eval() would freeze BN/dropout
-
-gen = Generator(config)
-discrim = MultiPeriodDiscriminator()
 
 def main():
-    pl.seed_everything(1234)
+    args = parse_args()
+    config["training"]["batch_size"] = args.batch_size
+    config["training"]["learning_rate"] = args.learning_rate
+
+    pl.seed_everything(args.seed, workers=True)
     torch.set_float32_matmul_precision("high")
 
     num_gpus = torch.cuda.device_count()
     print(f"Number of GPUs available: {num_gpus}")
+    print(f"Seed: {args.seed}  batch_size: {args.batch_size}  lr: {args.learning_rate}")
 
-    base_name = generate_base_name("synthesizer_training_speakr")
+    # Stage 1: the LibriTTS-pretrained style encoder is held FROZEN and only the
+    # decoder trains against it. train_synthesizer_finetune.py then unfreezes it
+    # at 0.1x LR. Pass --unfreeze_style to collapse both stages into one.
+    pretrained_style_encoder = MelStyleEncoder(style_config)
+    pretrained_style_encoder.load_state_dict(torch.load(
+        "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/"
+        "MSP-Podcast-1.10/pre-trained_models/pre-trained_style"))
 
+    gen = Generator(config)
+    # MPD(2,3,4,5,7,11) + MSD(3 scales) -- same discriminator as the baseline.
+    discrim = CombinedDiscriminator()
+
+    tag = "ser" if args.ser_loss == "differentiable" else "noser"
+    base_name = generate_base_name(f"synthesizer_training_speakr-{tag}-seed{args.seed}")
 
     train_loader, val_loader = create_dataloaders(batch_size=config['training']['batch_size'])
 
-    model = SynthesizerLightningModule(style_encoder=pretrained_style_encoder, decoder=gen, discriminator=discrim, config=config)
+    model = SynthesizerLightningModule(
+        style_encoder=pretrained_style_encoder, decoder=gen, discriminator=discrim,
+        config=config, freeze_style_encoder=not args.unfreeze_style,
+        ser_loss_mode=args.ser_loss)
+    print(f"Style encoder frozen: {model.freeze_style_encoder}")
+    print(f"L_SER mode: {args.ser_loss}")
 
 
     logger = setup_logger("logs_synthesizer", base_name)
@@ -74,33 +120,21 @@ def main():
 
     trainer = Trainer(
         logger=logger,
-        max_epochs=400,
+        max_epochs=args.max_epochs,
         min_epochs=10,
-        accelerator="gpu",  
-        devices=num_gpus,  
+        accelerator="gpu",
+        devices=num_gpus,
         precision="32",  # => when on 16, style encoder gives Nan values
         strategy="auto",
         callbacks=callbacks,
+        # Development has 8376 cached mels and the val loader runs at batch
+        # size 1, so a full pass would cost more than a training epoch. The val
+        # loader is unshuffled, so this is a fixed, deterministic subset.
+        limit_val_batches=args.limit_val_batches,
     )
 
-    if checkpoint is not None:
-        # Ensure that EarlyStopping is not in the list of callbacks
-        trainer.callbacks = [cb for cb in trainer.callbacks if not isinstance(cb, EarlyStopping)]
-        
-        trainer.should_stop = False
-        trainer.fit(model, train_loader, val_loader, ckpt_path=checkpoint)
+    trainer.fit(model, train_loader, val_loader, ckpt_path=args.resume)
 
-        if trainer.should_stop:
-            print("Training should stop: trainer.should_stop is True.")
-        else:
-            print("Training should continue: trainer.should_stop is False.")
-        
-        # save_model(model, "models_synthesizer", base_name)
-
-    else:
-        trainer.fit(model, train_loader, val_loader)                                                               
-        # save_model(model, "models_synthesizer", base_name)
-        
 
 def generate_base_name(log_name):
     timestamp = datetime.now().strftime("%m-%d_%H-%M-%S")
@@ -130,6 +164,16 @@ def setup_callbacks(checkpoint_folder, base_name):
         save_last=True
     )
 
+    # Dense periodic grid -- see train_hifigan_baseline.py: WVMOS is not logged
+    # during training and no monitored metric tracks it, so the best-sounding
+    # checkpoint can be evicted before it is ever measured.
+    periodic_checkpoint = ModelCheckpoint(
+        dirpath=checkpoint_folder,
+        filename=f"{base_name}-periodic-{{epoch}}",
+        every_n_epochs=10,
+        save_top_k=-1,
+        verbose=False,
+    )
     early_stopping_callback = EarlyStopping(
         monitor='val_loss',
         patience=300,
@@ -137,7 +181,7 @@ def setup_callbacks(checkpoint_folder, base_name):
         mode='min'
     )
 
-    return [checkpoint_callback, latest_checkpoint_callback, early_stopping_callback]
+    return [checkpoint_callback, latest_checkpoint_callback, periodic_checkpoint, early_stopping_callback]
 
 # def save_model(model, model_folder, base_name):
 #     if not os.path.exists(model_folder):

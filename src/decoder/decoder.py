@@ -228,3 +228,87 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         return y_d_rs, y_d_gs, fmap_rs, fmap_gs
 
 
+class MultiScaleDiscriminator(torch.nn.Module):
+    """HiFi-GAN MSD: three DiscriminatorS at 1x, 1/2x and 1/4x sample rate.
+
+    `MultiPeriodDiscriminator` above (the VITS variant) contains a *single*
+    DiscriminatorS at the original scale only. Prabhu et al. sec. 3.2 specifies
+    "three sub-discriminators operating at different scales: the original scale,
+    x2 downsampled scale, and x4 downsampled scale".
+
+    Following Kong et al., the first sub-discriminator uses spectral norm and
+    the downsampled ones use weight norm.
+    """
+
+    def __init__(self):
+        super(MultiScaleDiscriminator, self).__init__()
+        self.discriminators = nn.ModuleList([
+            DiscriminatorS(use_spectral_norm=True),
+            DiscriminatorS(),
+            DiscriminatorS(),
+        ])
+        self.meanpools = nn.ModuleList([
+            AvgPool1d(4, 2, padding=2),
+            AvgPool1d(4, 2, padding=2),
+        ])
+
+    def forward(self, y, y_hat):
+        y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+        for i, d in enumerate(self.discriminators):
+            if i != 0:
+                y = self.meanpools[i - 1](y)
+                y_hat = self.meanpools[i - 1](y_hat)
+            y_d_r, fmap_r = d(y)
+            y_d_g, fmap_g = d(y_hat)
+            y_d_rs.append(y_d_r)
+            y_d_gs.append(y_d_g)
+            fmap_rs.append(fmap_r)
+            fmap_gs.append(fmap_g)
+
+        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+
+
+class PeriodOnlyDiscriminator(torch.nn.Module):
+    """MPD with the paper's six periods and no DiscriminatorS mixed in."""
+
+    def __init__(self, periods=(2, 3, 4, 5, 7, 11), use_spectral_norm=False):
+        super(PeriodOnlyDiscriminator, self).__init__()
+        self.discriminators = nn.ModuleList([
+            DiscriminatorP(p, use_spectral_norm=use_spectral_norm) for p in periods
+        ])
+
+    def forward(self, y, y_hat):
+        y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+        for d in self.discriminators:
+            y_d_r, fmap_r = d(y)
+            y_d_g, fmap_g = d(y_hat)
+            y_d_rs.append(y_d_r)
+            y_d_gs.append(y_d_g)
+            fmap_rs.append(fmap_r)
+            fmap_gs.append(fmap_g)
+
+        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+
+
+class CombinedDiscriminator(torch.nn.Module):
+    """MPD (periods 2,3,4,5,7,11) + MSD (3 scales), as specified in the paper.
+
+    Drop-in replacement for `MultiPeriodDiscriminator`: same call signature and
+    same four concatenated return lists, so `discriminator_loss`,
+    `generator_loss` and `feature_loss` work unchanged.
+
+    `MultiPeriodDiscriminator` is left in place so existing TargetSEC and
+    baseline checkpoints still load.
+    """
+
+    def __init__(self, periods=(2, 3, 4, 5, 7, 11)):
+        super(CombinedDiscriminator, self).__init__()
+        self.mpd = PeriodOnlyDiscriminator(periods=periods)
+        self.msd = MultiScaleDiscriminator()
+
+    def forward(self, y, y_hat):
+        p_dr, p_dg, p_fr, p_fg = self.mpd(y, y_hat)
+        s_dr, s_dg, s_fr, s_fg = self.msd(y, y_hat)
+        return p_dr + s_dr, p_dg + s_dg, p_fr + s_fr, p_fg + s_fg
+
+

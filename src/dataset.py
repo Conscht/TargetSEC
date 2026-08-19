@@ -1,16 +1,34 @@
+import csv
 import os
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 import torchaudio
 import numpy as np
 import ast
 from torch.nn.utils.rnn import pack_sequence
 
 # ---- paths for cluster ----
-DEFAULT_TENSOR_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"
-DEFAULT_AUDIO_DIR  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
-DEFAULT_META_TRAIN = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
-DEFAULT_EMO_DIR    = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/emotion_embeddings"
+#
+# MSP-Podcast v1.10 official partitions (labels_consensus.csv Split_Set):
+#   Train 63076 | Development 10999 | Test1 16903 | Test2 13289
+#
+# Training uses Train, validation uses Development, evaluation uses Test1.
+# Test1 must never appear in a training loader -- see test_create_data_loader().
+_ROOT = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder"
+
+DEFAULT_TENSOR_DIR = f"{_ROOT}/mel_spectograms/Train"
+DEFAULT_AUDIO_DIR  = f"{_ROOT}/Audio/Audio"
+DEFAULT_META_TRAIN = f"{_ROOT}/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
+DEFAULT_EMO_DIR    = f"{_ROOT}/emotion_embeddings"
+
+# Validation split. The Development mel cache is incomplete (8376 of 10999
+# utterances have a *_mel.pt); that subset is used as-is.
+DEFAULT_VAL_TENSOR_DIR = f"{_ROOT}/mel_spectograms/Development"
+DEFAULT_META_VAL       = f"{_ROOT}/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/development.txt"
+
+# Evaluation split -- held out, never used for training or validation.
+DEFAULT_TEST_TENSOR_DIR = f"{_ROOT}/mel_spectograms/Test1"
+DEFAULT_META_TEST       = f"{_ROOT}/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
 
 TARGET_N_MELS = 80
 
@@ -20,7 +38,8 @@ class MelSpectrogramDataset(Dataset):
                  tensor_directory: str,
                  embedding_file: str = DEFAULT_META_TRAIN,
                  transform=None,
-                 emo_dir: str = None):
+                 emo_dir: str = None,
+                 arousal_csv: str = None):
         self.audio_directory = DEFAULT_AUDIO_DIR
         self.tensor_directory = tensor_directory
         self.transform = transform
@@ -32,6 +51,7 @@ class MelSpectrogramDataset(Dataset):
 
         self.embeddings = self.load_embeddings(embedding_file)
         self.emo_map = self._load_emo_dir(emo_dir) if emo_dir else {}
+        self.arousal_map = self._load_arousal_csv(arousal_csv) if arousal_csv else {}
         self.skipped_samples = 0
 
     def _load_emo_dir(self, emo_dir):
@@ -41,6 +61,23 @@ class MelSpectrogramDataset(Dataset):
         for fn in os.listdir(emo_dir):
             if fn.endswith(".pt"):
                 d[fn[:-3]] = os.path.join(emo_dir, fn)
+        return d
+
+    def _load_arousal_csv(self, csv_path):
+        """Load annotated arousal labels from labels_consensus.csv.
+
+        Returns dict {filename_no_ext: scalar} where scalar = (EmoAct-1)/6 ∈ [0,1].
+        """
+        d = {}
+        with open(csv_path, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                fname = os.path.splitext(row["FileName"])[0]
+                try:
+                    emoact = float(row["EmoAct"])
+                    d[fname] = (emoact - 1.0) / 6.0
+                except (ValueError, KeyError):
+                    pass
         return d
 
     def load_embeddings(self, embedding_file):
@@ -131,6 +168,15 @@ class MelSpectrogramDataset(Dataset):
                 emo = emo.view(-1, emo.size(-1)).mean(dim=0)
             sample["emotion_emb"] = emo  # (1024,)
 
+        if self.arousal_map:
+            audio_key_base = os.path.splitext(os.path.basename(audio_file))[0]
+            if audio_key_base not in self.arousal_map:
+                self.skipped_samples += 1
+                return None
+            sample["arousal_scalar"] = torch.tensor(
+                self.arousal_map[audio_key_base], dtype=torch.float32
+            )  # scalar in [0,1]
+
         return sample
 
     def load_audio(self, file_path):
@@ -197,6 +243,9 @@ def collate_fn(batch):
     if "emotion_emb" in batch[0]:
         out["emotion_emb"] = torch.stack([b["emotion_emb"] for b in batch])  # (B, 1024)
 
+    if "arousal_scalar" in batch[0]:
+        out["arousal_scalar"] = torch.stack([b["arousal_scalar"] for b in batch])  # (B,)
+
     return out
 
 def collate_fn_stats(batch):
@@ -223,18 +272,23 @@ def collate_fn_stats(batch):
 
 
 
-def create_dataloaders(batch_size, val_split=0.2):
-    tensor_directory = DEFAULT_TENSOR_DIR
+def _assert_no_test_leak(*tensor_dirs):
+    """Guard against training or validating on the evaluation split.
 
-    full_dataset = MelSpectrogramDataset(tensor_directory=tensor_directory)
-    print(f"[INFO] Total samples found: {len(full_dataset)}")
-    print(f"[INFO] Skipped samples during dataset construction: {full_dataset.skipped_samples}")
+    A stale default silently trained every decoder-stage model on Test1 between
+    commits 866ccf07 and this one; this makes that failure loud instead.
+    """
+    test_dir = os.path.realpath(DEFAULT_TEST_TENSOR_DIR)
+    for d in tensor_dirs:
+        if d is not None and os.path.realpath(d) == test_dir:
+            raise ValueError(
+                f"Refusing to build a train/val loader over the evaluation split: {d}. "
+                "Test1 is held out; use DEFAULT_TENSOR_DIR (Train) and "
+                "DEFAULT_VAL_TENSOR_DIR (Development)."
+            )
 
-    torch.manual_seed(42)
-    train_size = int((1.0 - val_split) * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 
+def _build_loaders(train_dataset, val_dataset, batch_size):
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -243,7 +297,6 @@ def create_dataloaders(batch_size, val_split=0.2):
         persistent_workers=True,
         collate_fn=collate_fn,
     )
-
     val_loader = DataLoader(
         val_dataset,
         batch_size=1,
@@ -252,40 +305,86 @@ def create_dataloaders(batch_size, val_split=0.2):
         persistent_workers=True,
         collate_fn=collate_fn,
     )
-
     return train_loader, val_loader
 
 
-def create_dataloaders_with_emotion(batch_size, val_split=0.2, emo_dir=DEFAULT_EMO_DIR):
+def create_dataloaders(batch_size,
+                       tensor_dir=DEFAULT_TENSOR_DIR,
+                       embedding_file=DEFAULT_META_TRAIN,
+                       val_tensor_dir=DEFAULT_VAL_TENSOR_DIR,
+                       val_embedding_file=DEFAULT_META_VAL):
+    """Train on MSP-Podcast Train, validate on Development.
+
+    Both splits are passed explicitly so that changing one caller can never
+    silently change every other caller, as happened with the module constants.
+    """
+    _assert_no_test_leak(tensor_dir, val_tensor_dir)
+
+    train_dataset = MelSpectrogramDataset(
+        tensor_directory=tensor_dir, embedding_file=embedding_file)
+    val_dataset = MelSpectrogramDataset(
+        tensor_directory=val_tensor_dir, embedding_file=val_embedding_file)
+
+    print(f"[INFO] Train samples: {len(train_dataset)}  (from {tensor_dir})")
+    print(f"[INFO] Val   samples: {len(val_dataset)}  (from {val_tensor_dir})")
+    print(f"[INFO] Skipped during construction: train={train_dataset.skipped_samples} "
+          f"val={val_dataset.skipped_samples}")
+
+    return _build_loaders(train_dataset, val_dataset, batch_size)
+
+
+DEFAULT_AROUSAL_CSV = (
+    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
+    "labels_consensus.csv"
+)
+
+
+def create_dataloaders_with_arousal(batch_size,
+                                    arousal_csv=DEFAULT_AROUSAL_CSV,
+                                    tensor_dir=DEFAULT_TENSOR_DIR,
+                                    embedding_file=DEFAULT_META_TRAIN,
+                                    val_tensor_dir=DEFAULT_VAL_TENSOR_DIR,
+                                    val_embedding_file=DEFAULT_META_VAL):
+    """Dataloaders with annotated arousal labels (from labels_consensus.csv).
+
+    Each batch contains 'arousal_scalar' (B,) with values (EmoAct-1)/6 ∈ [0,1].
+    Use this for the faithful HiFiGAN [7] reimplementation so that inference
+    with (c-1)/6 stays in-distribution with training.
+    """
+    _assert_no_test_leak(tensor_dir, val_tensor_dir)
+
+    train_dataset = MelSpectrogramDataset(
+        tensor_directory=tensor_dir, embedding_file=embedding_file,
+        arousal_csv=arousal_csv)
+    val_dataset = MelSpectrogramDataset(
+        tensor_directory=val_tensor_dir, embedding_file=val_embedding_file,
+        arousal_csv=arousal_csv)
+
+    print(f"[INFO] Train samples (with arousal labels): {len(train_dataset)}  (from {tensor_dir})")
+    print(f"[INFO] Val   samples (with arousal labels): {len(val_dataset)}  (from {val_tensor_dir})")
+    print(f"[INFO] Skipped: train={train_dataset.skipped_samples} val={val_dataset.skipped_samples}")
+
+    return _build_loaders(train_dataset, val_dataset, batch_size)
+
+
+def create_dataloaders_with_emotion(batch_size,
+                                    emo_dir=DEFAULT_EMO_DIR,
+                                    tensor_dir=DEFAULT_TENSOR_DIR,
+                                    embedding_file=DEFAULT_META_TRAIN,
+                                    val_tensor_dir=DEFAULT_VAL_TENSOR_DIR,
+                                    val_embedding_file=DEFAULT_META_VAL):
     """Like create_dataloaders but also returns emotion_emb in each batch."""
-    full_dataset = MelSpectrogramDataset(
-        tensor_directory=DEFAULT_TENSOR_DIR,
-        emo_dir=emo_dir,
-    )
-    print(f"[INFO] Total samples (with emo): {len(full_dataset)}")
+    _assert_no_test_leak(tensor_dir, val_tensor_dir)
 
-    torch.manual_seed(42)
-    train_size = int((1.0 - val_split) * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    train_dataset = MelSpectrogramDataset(
+        tensor_directory=tensor_dir, embedding_file=embedding_file, emo_dir=emo_dir)
+    val_dataset = MelSpectrogramDataset(
+        tensor_directory=val_tensor_dir, embedding_file=val_embedding_file, emo_dir=emo_dir)
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=4,
-        persistent_workers=True,
-        collate_fn=collate_fn,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=1,
-        shuffle=False,
-        num_workers=4,
-        persistent_workers=True,
-        collate_fn=collate_fn,
-    )
-    return train_loader, val_loader
+    print(f"[INFO] Train samples (with emo): {len(train_dataset)}  (from {tensor_dir})")
+    print(f"[INFO] Val   samples (with emo): {len(val_dataset)}  (from {val_tensor_dir})")
+
+    return _build_loaders(train_dataset, val_dataset, batch_size)
 
 
 def test_create_data_loader(batch_size=1):
@@ -298,9 +397,8 @@ def test_create_data_loader(batch_size=1):
       - test embedding file (Test*.txt)
       - no random split, just full test set
     """
-    tensor_directory = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"
-    embedding_file = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
-
+    tensor_directory = DEFAULT_TEST_TENSOR_DIR
+    embedding_file = DEFAULT_META_TEST
 
     full_dataset = MelSpectrogramDataset(
         tensor_directory=tensor_directory,

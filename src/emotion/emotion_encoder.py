@@ -81,3 +81,64 @@ def process_func(x: np.ndarray, device, sampling_rate: int = 16000, embeddings: 
 
 def get_emotion_model():
     return processor
+
+
+class DifferentiableSER(nn.Module):
+    """Frozen audeering SER usable *inside* a loss.
+
+    `process_func` above cannot be used for training: it runs under
+    `torch.no_grad()` and round-trips through NumPy, so any loss built on it is
+    a constant with respect to the generator. This wrapper keeps the graph, so
+    gradients flow through the (frozen) SER back into the waveform -- which is
+    what L_SER in the paper requires.
+
+    Weights are frozen and the module is pinned to eval mode: `RegressionHead`
+    contains dropout, and letting it activate would inject noise into the loss.
+    """
+
+    def __init__(self, pretrained_name: str = model_name):
+        super().__init__()
+        self.model = EmotionModel.from_pretrained(pretrained_name)
+        for p in self.model.parameters():
+            p.requires_grad_(False)
+        # nn.Module.__init__ leaves self.training True; the child .eval() alone
+        # would not cover the wrapper, and a later .train() on the parent would
+        # re-enable RegressionHead's dropout inside the loss.
+        self.eval()
+
+    def train(self, mode: bool = True):
+        # Ignore `mode`: this module must never leave eval.
+        return super().train(False)
+
+    @staticmethod
+    def normalize(wav: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:
+        """Torch port of Wav2Vec2FeatureExtractor.zero_mean_unit_var_norm.
+
+        The processor uses population variance (numpy ddof=0), so unbiased=False
+        here rather than torch's default.
+        """
+        mean = wav.mean(dim=-1, keepdim=True)
+        var = wav.var(dim=-1, unbiased=False, keepdim=True)
+        return (wav - mean) / torch.sqrt(var + eps)
+
+    def forward(self, wav: torch.Tensor) -> torch.Tensor:
+        """wav: (B, T) raw 16 kHz audio -> (B, 3) = arousal, dominance, valence."""
+        if wav.dim() == 1:
+            wav = wav.unsqueeze(0)
+        return self.model(self.normalize(wav))[1]
+
+
+def concordance_cc(x: torch.Tensor, y: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
+    """Lin's concordance correlation coefficient, differentiable.
+
+    CCC is a *batch-level* statistic -- undefined for a single pair -- so its
+    value depends on batch size. Matches torchmetrics.ConcordanceCorrCoef
+    (biased / population moments).
+    """
+    x = x.reshape(-1).float()
+    y = y.reshape(-1).float()
+    mx, my = x.mean(), y.mean()
+    vx = ((x - mx) ** 2).mean()
+    vy = ((y - my) ** 2).mean()
+    cov = ((x - mx) * (y - my)).mean()
+    return 2.0 * cov / (vx + vy + (mx - my) ** 2 + eps)

@@ -5,13 +5,17 @@ Full pipeline: scalar arousal class → emo_proj(1→128) → decoder → audio.
 Matches [7]: emotion encoder = simple trainable linear layers on scalar arousal label.
 No style encoder, no LDM. Generates 7 arousal variants per test utterance.
 
+Trained on annotated EmoAct labels via (EmoAct-1)/6, so inference with the
+same (c-1)/6 scale is in-distribution by construction — no regression-head
+workaround needed (unlike the earlier SER-output-trained checkpoint).
+
 Run after training_hifigan_baseline.slurm has a good checkpoint.
 """
 import os
 import json
+import argparse
 from collections import defaultdict
 
-import numpy as np
 import torch
 import torchaudio
 import pytorch_lightning as pl
@@ -22,16 +26,34 @@ from src.dataset import test_create_data_loader
 from src.decoder.decoder_modules import broadcast_embeddings
 from src.emotion.emotion_encoder import process_func
 
-CHECKPOINT = (
+_DEFAULT_CHECKPOINT = (
     "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "checkpoints_hifigan_baseline_scalar/"
-    "hifigan_baseline_scalar-06-14_14-52-53-epoch=137-val_loss=19.69.ckpt"
+    "checkpoints_hifigan_baseline_annotated/"
+    "hifigan_baseline_annotated-06-21_23-17-41-epoch=104-val_loss=20.00.ckpt"
 )
-EMOTION_EMBEDDING_DIR = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/"
-    "Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
-)
-SAVE_ROOT = "eval_outputs/hifigan_baseline_scalar_epoch137"
+_DEFAULT_SAVE_ROOT = "eval_outputs/hifigan_mlp_epoch104"
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--checkpoint", default=_DEFAULT_CHECKPOINT)
+parser.add_argument("--save_root", default=_DEFAULT_SAVE_ROOT)
+parser.add_argument("--n_utts", type=int, default=0,
+                    help="Evaluate only the first N utterances (0 = all of Test1). "
+                         "NOTE: the loader is sorted by filename, so a truncated run "
+                         "is NOT a random sample -- it is the earliest podcasts only. "
+                         "Use for smoke tests, never for reported numbers.")
+parser.add_argument("--sample_n", type=int, default=0,
+                    help="Evaluate a RANDOM sample of N utterances (0 = all). Unlike "
+                         "--n_utts this is unbiased, so it is safe for reported numbers. "
+                         "Use it to get WVMOS without writing 20 GB of WAVs.")
+parser.add_argument("--sample_seed", type=int, default=0,
+                    help="Seed for --sample_n, so the subset is reproducible.")
+parser.add_argument("--no_wav", action="store_true",
+                    help="Skip writing WAVs. Arousal L_abs/L_mse only, ~an order of "
+                         "magnitude faster and no 20+ GB of output. WVMOS needs the "
+                         "WAVs, so omit this when you also want naturalness.")
+args, _ = parser.parse_known_args()
+CHECKPOINT = args.checkpoint
+SAVE_ROOT = args.save_root
 
 config = {
     "cross_attention_dim": 768,
@@ -60,37 +82,41 @@ config = {
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def load_emotion_embeddings(embedding_dir, split="Test1"):
-    out = {}
-    split_path = os.path.join(embedding_dir, split)
-    for c in range(1, 8):
-        out[c] = np.load(os.path.join(split_path, f"{c}.npy"))
-    return out
-
-
 if __name__ == "__main__":
     pl.seed_everything(1234)
 
     os.makedirs(SAVE_ROOT, exist_ok=True)
     meta_path = os.path.join(SAVE_ROOT, "metadata.jsonl")
+    # Opened in append mode below, so a re-run into an existing save_root would
+    # silently double every record and corrupt stat_test.py's per-utterance
+    # grouping. Start clean.
+    if os.path.exists(meta_path):
+        os.remove(meta_path)
     wav_root = os.path.join(SAVE_ROOT, "wav")
     for c in range(1, 8):
         os.makedirs(os.path.join(wav_root, f"class_{c}"), exist_ok=True)
 
     sr = config["data"]["sampling_rate"]
 
-    # Scalar class values normalised to [0,1] — same range used during training
+    # Trained directly on (EmoAct-1)/6 annotated labels, so (c-1)/6 at inference
+    # is in-distribution by construction — same scale used for evaluation targets.
     targets = (torch.arange(1, 8, device=device, dtype=torch.float32) - 1.0) / 6.0  # (7,)
+    inference_scalars = targets.unsqueeze(1)  # (7, 1)
+    print("Inference scalars ((c-1)/6):", inference_scalars.squeeze().tolist())
 
     gen = Generator(config)
-    discrim = MultiPeriodDiscriminator()
 
+    # Inference only needs decoder / dict / emo_proj. Loading with
+    # discriminator=None and strict=False keeps the benchmark working across
+    # discriminator changes (MultiPeriodDiscriminator vs CombinedDiscriminator)
+    # instead of failing on unexpected discriminator.* keys.
     print(f"Loading HiFiGAN baseline from: {CHECKPOINT}")
     model = HiFiGANBaselineLightningModule.load_from_checkpoint(
         CHECKPOINT,
         decoder=gen,
-        discriminator=discrim,
+        discriminator=None,
         config=config,
+        strict=False,
     ).to(device).eval()
 
     for p in model.parameters():
@@ -105,7 +131,21 @@ if __name__ == "__main__":
 
     test_loader = test_create_data_loader(batch_size=1)
 
+    # Random subset. The loader is sorted by filename and unshuffled, so
+    # batch_idx is the dataset index -- picking indices up front gives an
+    # unbiased sample, unlike --n_utts which takes the earliest podcasts.
+    keep = None
+    if args.sample_n:
+        n_total = len(test_loader)
+        rng = __import__("random").Random(args.sample_seed)
+        keep = set(rng.sample(range(n_total), min(args.sample_n, n_total)))
+        print(f"Random sample: {len(keep)} of {n_total} utterances (seed {args.sample_seed})")
+
     for batch_idx, batch in enumerate(test_loader):
+        if args.n_utts and batch_idx >= args.n_utts:
+            break
+        if keep is not None and batch_idx not in keep:
+            continue
         for k, v in batch.items():
             if isinstance(v, torch.Tensor):
                 batch[k] = v.to(device, non_blocking=True)
@@ -120,7 +160,7 @@ if __name__ == "__main__":
         speaker_k    = batch["speaker_emb"].repeat(K, 1)
 
         with torch.inference_mode():
-            style_k = emo_proj(targets.unsqueeze(1))   # (7, 1) → (7, 128)
+            style_k = emo_proj(inference_scalars)   # (7, 1) → (7, 128)
             emb   = broadcast_embeddings(linguistic_k, speaker_k, style_k)
             y_hat = decoder(emb).squeeze(1).clamp(-1.0, 1.0)
 
@@ -139,7 +179,8 @@ if __name__ == "__main__":
             n_global   += 1
 
             out_path = os.path.join(wav_root, f"class_{c}", f"utt_{batch_idx:06d}.wav")
-            torchaudio.save(out_path, y_hat[i].detach().cpu().unsqueeze(0), sample_rate=sr)
+            if not args.no_wav:
+                torchaudio.save(out_path, y_hat[i].detach().cpu().unsqueeze(0), sample_rate=sr)
 
             with open(meta_path, "a") as f:
                 f.write(json.dumps({
@@ -163,4 +204,7 @@ if __name__ == "__main__":
 
     print(f"\n  Global:    MAE={mae_global/max(1,n_global):.4f}  MSE={mse_global/max(1,n_global):.4f}")
     print(f"  Macro avg: MAE={sum(per_class_mae.values())/7:.4f}  MSE={sum(per_class_mse.values())/7:.4f}")
-    print(f"\nWAVs saved to: {wav_root}")
+    if args.no_wav:
+        print("\nNo WAVs written (--no_wav); metrics only. Re-run without it for WVMOS.")
+    else:
+        print(f"\nWAVs saved to: {wav_root}")
