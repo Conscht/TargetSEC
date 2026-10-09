@@ -19,5 +19,5 @@ source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
 export PYTHONPATH="$PWD"
 
-srun --ntasks=1 python train_ldm_finetune.py \
+srun --ntasks=1 python train/train_ldm_finetune.py \
     --finetune_checkpoint "$FT_CKPT" --style_stats "$STATS" ${RESUME:+--resume "$RESUME"}

@@ -16,5 +16,6 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 # env
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
-srun --cpu-bind=none python benchmark_ldm.py
+srun --cpu-bind=none python eval/benchmark_ldm.py

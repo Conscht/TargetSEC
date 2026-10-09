@@ -20,12 +20,12 @@ conda activate emoldm
 export PYTHONPATH="$PWD"
 
 echo "########## ECAPA speaker similarity"
-srun --ntasks=1 python evaluate_speaker.py --wav_root "$WAV_ROOT"
+srun --ntasks=1 python eval/evaluate_speaker.py --wav_root "$WAV_ROOT"
 
 echo "########## Independent SER (SpeechBrain IEMOCAP)"
-srun --ntasks=1 python second_emotion_eval.py --wav_root "$WAV_ROOT" --name "${NAME:-system}"
+srun --ntasks=1 python eval/second_emotion_eval.py --wav_root "$WAV_ROOT" --name "${NAME:-system}"
 
 echo "########## WER (Whisper medium, random 2000/class)"
-srun --ntasks=1 python -u wer_eval_perclass.py --wav_root "$WAV_ROOT" --sample_n 2000 --sample_seed 0
+srun --ntasks=1 python -u eval/wer_eval_perclass.py --wav_root "$WAV_ROOT" --sample_n 2000 --sample_seed 0
 
 echo "SUITE DONE"

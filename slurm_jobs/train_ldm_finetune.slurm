@@ -19,7 +19,7 @@ source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
 export PYTHONPATH="$PWD"
 
-srun --ntasks=1 python -u train_ldm_finetune.py \
+srun --ntasks=1 python -u train/train_ldm_finetune.py \
     --finetune_checkpoint "$FT_CKPT" --style_stats "$STATS" \
     --use_speaker "${USE_SPEAKER:-1}" --max_epochs "${MAX_EPOCHS:-400}" \
     ${RESUME:+--resume "$RESUME"}

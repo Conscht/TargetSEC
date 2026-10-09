@@ -20,6 +20,6 @@ SPK="$SLURM_ARRAY_TASK_ID"
 if [ "$SPK" = "0" ]; then MLP="$MLP_NOSPK"; else MLP="$MLP_WSPK"; fi
 SR="eval_outputs/ABL_mlp_spk${SPK}"
 
-srun --ntasks=1 python -u benchmark_mlp.py --synth "$SYNTH" --mlp "$MLP" \
+srun --ntasks=1 python -u eval/benchmark_mlp.py --synth "$SYNTH" --mlp "$MLP" \
     --use_speaker "$SPK" --save_root "$SR"
-srun --ntasks=1 python vmos_calc_hifigan_baseline.py --wav_root "$SR/wav"
+srun --ntasks=1 python eval/vmos_calc_hifigan_baseline.py --wav_root "$SR/wav"

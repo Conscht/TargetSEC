@@ -18,8 +18,8 @@ conda activate emoldm
 export PYTHONPATH="$PWD"
 
 echo "=== generate all 16903 x 7 ==="
-srun --ntasks=1 python benchmark_hifigan_baseline.py \
+srun --ntasks=1 python eval/benchmark_hifigan_baseline.py \
     --checkpoint "$CKPT" --save_root "$SAVE_ROOT"
 
 echo "=== WVMOS ==="
-srun --ntasks=1 python vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"
+srun --ntasks=1 python eval/vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"

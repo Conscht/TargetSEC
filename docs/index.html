@@ -267,20 +267,17 @@ footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
 
 <section>
   <h2>Repository</h2>
-  <pre>src/
+  <pre>train/      the four pipeline stages, the baseline, the pre-flight loss gate
+eval/       benchmarks, WVMOS, WER, speaker similarity, IEMOCAP, significance
+tools/      figures, grid search, regeneration utilities
+src/
   dataset.py                  Train / Development / Test1 loaders, split guard
   synthesizer_style_module.py Stage 1-2: decoder + mel style encoder
   diffusion_module_fixed.py   Stage 4: the latent style LDM (v-parameterised)
   decoder/decoder.py          HiFi-GAN generator, MPD + MSD discriminators
   emotion/emotion_encoder.py  Frozen SER, differentiable wrapper, CCC
 processing/
-  mel_differentiable.py       torch mel that keeps the graph intact
-train_synthesizer.py          Stage 1  decoder, style encoder frozen
-train_synthesizer_finetune.py Stage 2  unfreeze the style encoder
-compute_style_stats_finetune.py Stage 3  style latent statistics
-train_ldm_finetune.py         Stage 4  the diffusion prior
-benchmark_finetune.py         Test1 evaluation
-stat_test_paired.py           speaker-clustered paired significance test</pre>
+  mel_differentiable.py       torch mel that keeps the graph intact</pre>
   <p style="margin-top:1.2rem">Checkpoints and evaluation outputs are not in the repository; the
   paths they are expected at are listed in <code>docs/frozen_checkpoints.md</code>. Training needs
   MSP-Podcast v1.10, which is obtained under licence from the University of Texas at Dallas.</p>

@@ -13,12 +13,13 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 CKPT="checkpoints_hifigan_baseline_annotated/hifigan_baseline_annotated-06-24_12-09-24-epoch=283-val_loss=19.56.ckpt"
 SAVE_ROOT="eval_outputs/hifigan_epoch283"
 
 echo "=== Generating wavs ==="
-srun --ntasks=1 python benchmark_hifigan_baseline.py --checkpoint "$CKPT" --save_root "$SAVE_ROOT"
+srun --ntasks=1 python eval/benchmark_hifigan_baseline.py --checkpoint "$CKPT" --save_root "$SAVE_ROOT"
 
 echo "=== Running WVMOS ==="
-srun --ntasks=1 python vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"
+srun --ntasks=1 python eval/vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"

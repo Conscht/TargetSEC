@@ -14,5 +14,6 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
-srun python compute_style_stats_finetune.py
+srun python train/compute_style_stats_finetune.py

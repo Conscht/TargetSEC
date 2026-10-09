@@ -22,7 +22,8 @@ import os, json, math, ast
 from collections import defaultdict
 import numpy as np
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+# the repo root, one level up now that this lives in eval/
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = f"{ROOT}/eval_outputs/FULL_baseline_ep99_test1/metadata.jsonl"
 TSEC = f"{ROOT}/eval_outputs/FULL_targetsec_ep341_test1/metadata.jsonl"
 MEL  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Test1"

@@ -18,12 +18,13 @@
 cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 if [ -n "$RESUME" ]; then
-  srun --ntasks=1 python train_synthesizer_finetune.py --resume "$RESUME" \
+  srun --ntasks=1 python train/train_synthesizer_finetune.py --resume "$RESUME" \
        --max_epochs "${MAX_EPOCHS:-20}"
 else
-  srun --ntasks=1 python train_synthesizer_finetune.py \
+  srun --ntasks=1 python train/train_synthesizer_finetune.py \
        --synth_checkpoint "$SYNTH_CKPT" --max_epochs "${MAX_EPOCHS:-20}" \
        --ser_loss "${SER_LOSS:-detached}"
 fi

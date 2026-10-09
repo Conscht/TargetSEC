@@ -24,10 +24,11 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 # env
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 SEED="${SLURM_ARRAY_TASK_ID:-1234}"
 
 EXTRA=""
 if [ -n "$RESUME" ]; then EXTRA="--resume $RESUME"; fi
-srun --ntasks=1 python train_synthesizer.py --seed "$SEED" \
+srun --ntasks=1 python train/train_synthesizer.py --seed "$SEED" \
     --ser_loss "${SER_LOSS:-detached}" $EXTRA

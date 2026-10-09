@@ -17,6 +17,7 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 # Run your new diffusion script
-srun --cpu-bind=none python train2_diffusion.py
+srun --cpu-bind=none python train/train2_diffusion.py

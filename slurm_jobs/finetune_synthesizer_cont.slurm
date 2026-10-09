@@ -14,7 +14,8 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 # Continue from best finetune checkpoint (epoch=48, val_loss=16.24)
-srun python train_synthesizer_finetune.py \
+srun python train/train_synthesizer_finetune.py \
   --resume "checkpoints_synthesizer_finetune/synthesizer_finetune-06-13_18-22-18-epoch=48-val_loss=16.24.ckpt"

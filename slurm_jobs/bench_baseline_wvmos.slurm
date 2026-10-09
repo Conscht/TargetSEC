@@ -15,7 +15,8 @@
 cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
-srun --ntasks=1 python benchmark_hifigan_baseline.py \
+srun --ntasks=1 python eval/benchmark_hifigan_baseline.py \
     --checkpoint "$CKPT" --save_root "$SAVE_ROOT" --sample_n "${N:-2000}" --sample_seed 0
-srun --ntasks=1 python vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"
+srun --ntasks=1 python eval/vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"

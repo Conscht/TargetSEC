@@ -14,5 +14,5 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
 export PYTHONPATH="$PWD"
-srun --ntasks=1 python -u wer_eval_perclass.py --wav_root "$WAV_ROOT" \
+srun --ntasks=1 python -u eval/wer_eval_perclass.py --wav_root "$WAV_ROOT" \
     --sample_n 2000 --sample_seed 0

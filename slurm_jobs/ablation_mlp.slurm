@@ -20,7 +20,7 @@ conda activate emoldm
 export PYTHONPATH="$PWD"
 
 SPK="$SLURM_ARRAY_TASK_ID"
-srun --ntasks=1 python -u train_mlp_ablation.py \
+srun --ntasks=1 python -u train/train_mlp_ablation.py \
     --style_stats style_stats_finetune_noser.pt \
     --synth_checkpoint "$SYNTH" \
     --use_speaker "$SPK" --max_epochs 300

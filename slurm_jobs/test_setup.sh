@@ -17,7 +17,7 @@ echo "Checking core files..."
 files=(
     "evaluate_speaker_similarity.py"
     "speaker_similarity_eval.slurm"
-    "analyze_results.py"
+    "eval/analyze_results.py"
 )
 
 all_exist=true
@@ -102,11 +102,11 @@ else
     echo "  ✗ evaluate_speaker_similarity.py: Syntax error"
 fi
 
-python3 -m py_compile analyze_results.py 2>/dev/null
+python3 -m py_compile eval/analyze_results.py 2>/dev/null
 if [ $? -eq 0 ]; then
-    echo "  ✓ analyze_results.py: Syntax OK"
+    echo "  ✓ eval/analyze_results.py: Syntax OK"
 else
-    echo "  ✗ analyze_results.py: Syntax error"
+    echo "  ✗ eval/analyze_results.py: Syntax error"
 fi
 echo ""
 

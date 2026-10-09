@@ -19,6 +19,6 @@ source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
 export PYTHONPATH="$PWD"
 
-srun --ntasks=1 python -u benchmark_finetune.py --synth "$SY" --ldm "$LD" \
+srun --ntasks=1 python -u eval/benchmark_finetune.py --synth "$SY" --ldm "$LD" \
     --save_root "$SAVE_ROOT"
-srun --ntasks=1 python vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"
+srun --ntasks=1 python eval/vmos_calc_hifigan_baseline.py --wav_root "$SAVE_ROOT/wav"

@@ -17,7 +17,7 @@ from torch import nn
 from processing.mel_differentiable import mel_spectrogram_torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from test_audio import calculate_vmos
+from src.test_audio import calculate_vmos
 from src.emotion.emotion_encoder import DifferentiableSER, concordance_cc
 from torchmetrics.regression import ConcordanceCorrCoef
 

@@ -24,16 +24,17 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 SEED="${SLURM_ARRAY_TASK_ID:-1234}"
 
 # Gate on the loss/gradient checks -- cheap, and exactly what would have caught
 # 45*L_recon and L_SER being dead constants before 400 epochs of training.
 echo "=== Pre-flight checks (seed $SEED) ==="
-srun --ntasks=1 python verify_hifigan_losses.py || exit 1
+srun --ntasks=1 python train/verify_hifigan_losses.py || exit 1
 
 echo "=== Training (seed $SEED) ==="
 EXTRA=""
 if [ -n "$RESUME" ]; then EXTRA="--resume $RESUME"; fi
-srun --ntasks=1 python train_hifigan_baseline.py --seed "$SEED" \
+srun --ntasks=1 python train/train_hifigan_baseline.py --seed "$SEED" \
     --ser_loss "${SER_LOSS:-differentiable}" $EXTRA

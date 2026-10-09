@@ -14,5 +14,6 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
-srun python benchmark_resynth.py && python vmos_calc_resynth.py
+srun python eval/benchmark_resynth.py && python eval/vmos_calc_resynth.py

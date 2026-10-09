@@ -17,7 +17,8 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 # Activate environment
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 # Run the MLP Ablation script
 # NOTE: Make sure you set USE_SPEAKER_COND = True/False inside this file before submitting!
-srun python train_mlp_ablation.py
+srun python train/train_mlp_ablation.py

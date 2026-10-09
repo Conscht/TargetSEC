@@ -14,7 +14,8 @@ cd "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM"
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 pip install -q openai-whisper jiwer
 
-srun python -u wer_eval.py
+srun python -u eval/wer_eval.py

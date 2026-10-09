@@ -19,6 +19,7 @@ mkdir -p logs
 # env
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate emoldm
+export PYTHONPATH="$PWD"
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
@@ -28,4 +29,4 @@ which python
 python -V
 nvidia-smi || true
 
-srun python evaluate_speaker.py
+srun python eval/evaluate_speaker.py

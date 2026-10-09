@@ -31,7 +31,7 @@ this metric could ever approach. ECAPA-TDNN speaker similarity is 0.351 +/- 0.12
 0.370 +/- 0.12 for the baseline, against a random-pair floor of 0.05.
 
 Aggregating the 118,321 matched pairs by speaker, TargetSEC has the lower arousal error for
-**58 of 60** Test1 speakers (paired *t*-test, *p* < 1e-19; `stat_test_paired.py`). That establishes
+**58 of 60** Test1 speakers (paired *t*-test, *p* < 1e-19; `eval/stat_test_paired.py`). That establishes
 the gap on this test set for these models — it is not a claim about variance across training seeds.
 
 ### Ablation
@@ -82,13 +82,17 @@ the fine-tuned encoder, over all 16,903 Test1 utterances.
 
 | UMAP | PCA |
 |---|---|
-| ![Style shift, UMAP](style_shift_umap.png) | ![Style shift, PCA](style_shift_pca.png) |
+| ![Style shift, UMAP](docs/style_shift_umap.png) | ![Style shift, PCA](docs/style_shift_pca.png) |
 
 ---
 
 ## Layout
 
 ```
+train/        the four pipeline stages, the baseline, and the pre-flight loss gate
+eval/         benchmarks, WVMOS, WER, speaker similarity, IEMOCAP, significance tests
+tools/        figures, grid search, one-off regeneration utilities
+slurm_jobs/   one sbatch script per entry point above
 src/
   dataset.py                     Train / Development / Test1 loaders, split guard
   synthesizer_style_module.py    Stages 1-2: decoder + mel style encoder
@@ -101,6 +105,9 @@ processing/
 Ablation/                        MLP style prior (the deterministic baseline)
 docs/                            Project page (GitHub Pages) and checkpoint manifest
 ```
+
+Scripts live in packages rather than the root, so each sbatch job exports
+`PYTHONPATH="$PWD"` and is launched from the repository root.
 
 ---
 
@@ -136,7 +143,7 @@ It is trained **without** the *L*<sub>SER</sub> term, because optimising through
 used for evaluation couples the model to the metric. It nevertheless reproduces the WVMOS and
 *L*<sub>abs</sub> that paper reports for its +*L*<sub>SER</sub> configuration.
 
-`verify_hifigan_losses.py` runs from the sbatch script before training starts, as a pre-flight gate:
+`train/verify_hifigan_losses.py` runs from the sbatch script before training starts, as a pre-flight gate:
 it asserts that the mel and SER losses actually carry gradients, that the discriminator has the
 expected number of sub-discriminators, and that the split guard fires.
 
@@ -152,8 +159,8 @@ sbatch --export=ALL,WAV_ROOT=<out>/wav slurm_jobs/wer_only.slurm
 sbatch slurm_jobs/evaluate_speaker.slurm       # ECAPA-TDNN similarity
 sbatch slurm_jobs/second_emotion_eval.slurm    # IEMOCAP rank correlation
 
-python stat_test_paired.py                     # speaker-clustered paired test
-python plot_arousal_figure.py                  # per-level figure (all four systems)
+python eval/stat_test_paired.py                # speaker-clustered paired test
+python tools/plot_arousal_figure.py            # per-level figure (all four systems)
 ```
 
 Checkpoints are not in this repository; the paths they are expected at are listed in
