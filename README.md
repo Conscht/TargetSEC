@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/banner.png" alt="TargetSEC — one utterance converted to all seven arousal levels, drawn as waveform envelopes running from calm to activated" width="100%"></p>
+<p align="center"><img src="docs/banner.png?v=2" alt="TargetSEC — one utterance converted to all seven arousal levels, drawn as waveform envelopes running from calm to activated" width="100%"></p>
 
 [![Demo](https://img.shields.io/badge/demo-listen-6B3FA0?style=for-the-badge&logo=githubpages&logoColor=white)](https://conscht.github.io/TargetSEC/)
 [![Paper](https://img.shields.io/badge/paper-arXiv%3A2606.07293-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2606.07293)
