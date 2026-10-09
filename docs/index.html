@@ -344,10 +344,10 @@ const SOURCES=[
  {n:5, tag:"src05_spk063_F", spk:"063", g:"Female", ar:"3.67", dur:"4.7 s", file:"MSP-PODCAST_0211_0323"}
 ];
 const SYSTEMS=[["targetsec","TargetSEC"],["hifigan","HiFi-GAN baseline"]];
-// The ramp spans the whole table, so it fills the card rather than starting
-// after the label column -- but its dots must still land on the seven column
-// centres. Those depend on the rendered width, so measure them instead of
-// assuming: the alignment then holds at any viewport size.
+// The ramp cell spans the seven data columns, so the ramp begins where chip 1
+// begins and ends where chip 7 ends. Within that span the dots still have to
+// land on the column centres, which depend on the rendered width -- so measure
+// the header cells rather than assuming, and the alignment holds at any size.
 function drawRamp(){
   const cell = grid.querySelector('.rampcell');
   const heads = [...grid.querySelectorAll('thead th')].slice(1);
@@ -360,7 +360,7 @@ function drawRamp(){
     return +(r.left - base.left + r.width / 2).toFixed(1);
   });
   const ys = [84, 76, 67, 58, 50, 42, 34];
-  const fx0 = 20, fx1 = W - 20, fy0 = 90, fy1 = 28;
+  const fx0 = 17, fx1 = W - 17, fy0 = 90, fy1 = 28;
   const pts = [[fx0 + 16, fy0 - 1]].concat(xs.map((x,i)=>[x, ys[i]])).concat([[fx1 - 16, fy1 + 1]]);
   const line = pts.map(p => p.join(',')).join(' ');
   const dots = xs.map((x,i) =>
@@ -378,8 +378,8 @@ function drawRamp(){
         <circle r="15"/><circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
         <circle class="pupil" cx="5.5" cy="-5.5" r="1.9"/><path d="M-7 2.5 Q0 11 7 2.5 Z"/>
       </g>
-      <text class="lbl" x="2" y="114">1 \u00b7 CALM</text>
-      <text class="lbl" x="${W-2}" y="114" text-anchor="end">7 \u00b7 ACTIVATED</text>
+      <text class="lbl" x="0" y="114">1 \u00b7 CALM</text>
+      <text class="lbl" x="${W}" y="114" text-anchor="end">7 \u00b7 ACTIVATED</text>
     </svg>`;
 }
 let rampTimer;
@@ -430,7 +430,8 @@ function render(){
               aria-label="${label}, arousal level ${c}">&#9654;</button></td>`;
     html+='</tr>';
   });
-  grid.innerHTML=html+'<tr><td colspan="8" class="rampcell" style="padding-top:12px"></td></tr></tbody>';
+  grid.innerHTML=html+'<tr><th class="rowlab"></th>'+
+    '<td colspan="7" class="rampcell" style="padding-top:12px"></td></tr></tbody>';
   drawRamp();
   grid.querySelectorAll('button.play').forEach(b=>b.onclick=()=>play(b.dataset.src,b));
 }
