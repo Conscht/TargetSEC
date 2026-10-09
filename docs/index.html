@@ -74,7 +74,9 @@ figure{margin:1.5rem 0 0}
 figure svg,figure img{display:block;width:100%;max-width:100%;height:auto}
 figure img{border:1px solid var(--line);border-radius:10px;background:#fff}
 figcaption{font-size:.87rem;color:var(--fg-3);margin-top:.8rem;max-width:66ch}
-.arch{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 14px}
+.arch{margin-top:1.6rem}
+.arch a{display:block}
+.arch img{border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px}
 
 .demo{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:1.5rem}
 .srcrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
@@ -144,8 +146,8 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
   <p class="eyebrow">Speech emotion conversion</p>
   <h1>TargetSEC</h1>
   <p class="lede" style="margin-top:1.1rem">Move a recorded utterance to a target arousal level
-  without changing what was said or who said it &mdash; by diffusing a 128-dimensional style vector
-  instead of a spectrogram.</p>
+  without changing what was said or who said it &mdash; by generating a style vector that conditions
+  the decoder, rather than the spectrogram itself.</p>
   <p class="byline">Constantin Alexander Auga</p>
   <p class="affil">Hasso Plattner Institute / University of Potsdam</p>
   <nav class="links">
@@ -171,78 +173,19 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
   and a continuous target arousal.</p>
 
   <figure class="arch">
-    <svg viewBox="0 0 800 320" role="img" xmlns="http://www.w3.org/2000/svg"
-         aria-label="The decoder takes content, speaker and style. The style input has two possible
-         sources: during training a mel style encoder reading the source audio, and at inference a
-         latent diffusion model driven by target arousal and speaker. The decoder itself is
-         identical in both cases.">
-      <defs>
-        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
-                orient="auto-start-reverse">
-          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
-        </marker>
-        <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
-                orient="auto-start-reverse">
-          <path d="M0 0 L10 5 L0 10 z" fill="#6b3fa0"/>
-        </marker>
-      </defs>
-
-      <g fill="none" stroke="currentColor" stroke-width="1.3" opacity=".8">
-        <rect x="150" y="26"  width="186" height="42" rx="7"/>
-        <rect x="150" y="84"  width="186" height="42" rx="7"/>
-        <rect x="150" y="142" width="186" height="42" rx="7" stroke-dasharray="5 4"/>
-        <rect x="470" y="60"  width="152" height="150" rx="9" stroke-width="1.8"/>
-      </g>
-      <rect x="150" y="226" width="186" height="56" rx="7" fill="none"
-            stroke="var(--accent)" stroke-width="1.8"/>
-
-      <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
-        <text x="243" y="52"  text-anchor="middle">HuBERT km100</text>
-        <text x="243" y="110" text-anchor="middle">WavLM speaker</text>
-        <text x="243" y="168" text-anchor="middle">mel style encoder</text>
-        <text x="546" y="128" text-anchor="middle" font-size="14">HiFi-GAN V1</text>
-        <text x="546" y="149" text-anchor="middle" font-size="12" opacity=".65">decoder</text>
-      </g>
-      <text x="243" y="250" text-anchor="middle" font-family="IBM Plex Sans, sans-serif"
-            font-size="12.5" font-weight="600" fill="var(--accent)">latent diffusion</text>
-      <text x="243" y="269" text-anchor="middle" font-family="IBM Plex Mono, monospace"
-            font-size="10" fill="var(--accent)" opacity=".8">v-param, 100 steps</text>
-
-      <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity=".55">
-        <text x="16" y="44">source</text><text x="16" y="57">audio</text>
-        <text x="16" y="247">target</text><text x="16" y="260">arousal</text>
-        <text x="16" y="273">+ speaker</text>
-        <text x="403" y="40"  text-anchor="middle">content 128</text>
-        <text x="403" y="98"  text-anchor="middle">speaker 512</text>
-        <text x="403" y="156" text-anchor="middle">style 128</text>
-        <text x="700" y="130" text-anchor="middle">converted</text>
-        <text x="700" y="144" text-anchor="middle">waveform</text>
-      </g>
-
-      <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#ar)" opacity=".75">
-        <path d="M86 47 H150"/>
-        <path d="M100 47 V105 H150"/>
-        <path d="M100 47 V163 H150"/>
-        <path d="M336 47 H470"/>
-        <path d="M336 105 H470"/>
-        <path d="M622 135 H660"/>
-      </g>
-      <path d="M336 163 H430 V186 H470" stroke="currentColor" stroke-width="1.3" fill="none"
-            marker-end="url(#ar)" stroke-dasharray="5 4" opacity=".75"/>
-      <path d="M86 254 H150" stroke="var(--accent)" stroke-width="1.6" fill="none"
-            marker-end="url(#arA)"/>
-      <path d="M336 254 H430 V186 H470" stroke="var(--accent)" stroke-width="1.9" fill="none"
-            marker-end="url(#arA)"/>
-
-      <g font-family="IBM Plex Mono, monospace" font-size="10">
-        <text x="437" y="178" fill="currentColor" opacity=".5">training</text>
-        <text x="437" y="232" fill="var(--accent)">inference</text>
-      </g>
-      <circle cx="470" cy="186" r="4.5" fill="var(--accent)"/>
-    </svg>
-    <figcaption>One slot, two sources. The decoder is identical in both passes &mdash; only what
-    fills the style input changes, which is why the diffusion prior can be retrained for a different
-    style descriptor without touching the synthesis backbone.</figcaption>
+    <a href="architecture.png">
+      <img src="architecture.png" alt="Two panels. (a) The TargetSEC framework: a source waveform
+        feeds a speaker encoder, a content encoder and a style encoder, whose outputs are summed and
+        passed to a decoder producing converted audio. At inference a dashed path replaces the style
+        encoder with a latent diffusion model driven by conditioning embeddings. (b) Training of
+        that diffusion model: emotion and speaker encoders read the source waveform and meet at a
+        cross-attention step feeding a U-Net, which denoises toward the style encoder's output; the
+        style encoder is detached from the gradient.">
+    </a>
+    <figcaption>(a) The framework. Solid arrows are training paths, dashed arrows inference-time
+    operations &mdash; at inference the style encoder is replaced by the LDM, and nothing else about
+    the decoder changes. (b) Training of the diffusion prior: the style encoder supplies the target
+    latent and is detached, so no gradient reaches it from the LDM.</figcaption>
   </figure>
 </section>
 
