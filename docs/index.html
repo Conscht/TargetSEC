@@ -9,78 +9,76 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: one reading column; the listening grid breaks full-bleed as the page's centre of gravity.
-   Colour: cool-biased neutrals, slate accent, and a seven-step warm ramp that encodes arousal level
-   (pale = calm, saturated = activated) rather than decorating it. */
+/* Layout: one reading column; the architecture figure and the listening grid are the two
+   full-width moments. Colour: violet-biased neutrals under a single purple hue, carried from
+   the colour TargetSEC takes in the paper's figures, with a seven-step sequential ramp of that
+   same hue encoding arousal level - pale is calm, saturated is activated. */
 :root{
-  --bg:#fbfbfa; --surface:#ffffff; --surface-2:#f3f4f3;
-  --fg:#17191c; --fg-2:#4a4f56; --fg-3:#787f88;
-  --line:#e2e4e3; --line-2:#cdd1d0;
-  --accent:#2f5d8a; --accent-weak:#e8eff6;
-  --ok:#2e7d54;
-  --a1:#ece9e2; --a2:#f0dcc2; --a3:#ebc698; --a4:#e2ab6e;
-  --a5:#d38c48; --a6:#bd6c2b; --a7:#9e4d15;
-  --ink-on-ramp:#2a1c0d;
+  --bg:#fbfafc; --surface:#ffffff; --surface-2:#f4f2f8;
+  --fg:#191721; --fg-2:#4c4858; --fg-3:#7b7589;
+  --line:#e6e3ed; --line-2:#cfc9db;
+  --accent:#6b3fa0; --accent-weak:#f1eaf9; --ok:#2e7d54;
+  --a1:#efecf5; --a2:#ddd3ec; --a3:#c7b6e0; --a4:#ad96d2;
+  --a5:#9175c1; --a6:#7554ad; --a7:#593793;
+  --ink-lo:#2a2135; --ink-hi:#ffffff;
   --display:"Newsreader",Georgia,"Times New Roman",serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#121416; --surface:#191c1f; --surface-2:#212528;
-    --fg:#eceeef; --fg-2:#aeb4ba; --fg-3:#838a91;
-    --line:#2a2e32; --line-2:#3a3f44;
-    --accent:#7aa9d8; --accent-weak:#1c2a38;
-    --ok:#6cc295;
-    --a1:#33322e; --a2:#4a3e2c; --a3:#64502f; --a4:#80622f;
-    --a5:#9c742f; --a6:#b8832f; --a7:#d09239;
-    --ink-on-ramp:#f6ece0;
+    --bg:#131218; --surface:#1a1920; --surface-2:#221f2a;
+    --fg:#eeebf3; --fg-2:#b0aabd; --fg-3:#847e92;
+    --line:#2b2834; --line-2:#3c3849;
+    --accent:#b490e8; --accent-weak:#271f38; --ok:#6cc295;
+    --a1:#2b2833; --a2:#372f47; --a3:#45395c; --a4:#554473;
+    --a5:#67518b; --a6:#7b5fa4; --a7:#9170bd;
+    --ink-lo:#e9e4f2; --ink-hi:#ffffff;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#121416; --surface:#191c1f; --surface-2:#212528;
-  --fg:#eceeef; --fg-2:#aeb4ba; --fg-3:#838a91;
-  --line:#2a2e32; --line-2:#3a3f44;
-  --accent:#7aa9d8; --accent-weak:#1c2a38;
-  --ok:#6cc295;
-  --a1:#33322e; --a2:#4a3e2c; --a3:#64502f; --a4:#80622f;
-  --a5:#9c742f; --a6:#b8832f; --a7:#d09239;
-  --ink-on-ramp:#f6ece0;
+  --bg:#131218; --surface:#1a1920; --surface-2:#221f2a;
+  --fg:#eeebf3; --fg-2:#b0aabd; --fg-3:#847e92;
+  --line:#2b2834; --line-2:#3c3849;
+  --accent:#b490e8; --accent-weak:#271f38; --ok:#6cc295;
+  --a1:#2b2833; --a2:#372f47; --a3:#45395c; --a4:#554473;
+  --a5:#67518b; --a6:#7b5fa4; --a7:#9170bd;
+  --ink-lo:#e9e4f2; --ink-hi:#ffffff;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);
-     font:400 16px/1.6 var(--body);font-feature-settings:"kern","liga"}
-.wrap{max-width:820px;margin:0 auto;padding-inline:20px;padding-block:0}
+     font:400 16px/1.62 var(--body);font-feature-settings:"kern","liga"}
+.wrap{max-width:840px;margin:0 auto;padding-inline:20px}
 a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
-a:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-h1,h2,h3{font-family:var(--display);font-weight:500;text-wrap:balance;margin:0}
-h1{font-size:clamp(2.3rem,6vw,3.4rem);line-height:1.08;letter-spacing:-.015em}
-h2{font-size:1.55rem;line-height:1.2;margin-block:0 .6rem}
-h3{font-size:1.1rem;font-family:var(--body);font-weight:600;margin-block:0 .4rem}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2{font-family:var(--display);font-weight:500;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.4rem,6.5vw,3.6rem);line-height:1.05;letter-spacing:-.018em}
+h2{font-size:1.6rem;line-height:1.18;margin-block:0 .7rem}
 p{margin:0 0 1rem;max-width:66ch}
-.lede{font-size:1.14rem;color:var(--fg-2);max-width:60ch}
-.eyebrow{font:500 .72rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3)}
-section{padding-block:3rem;border-top:1px solid var(--line)}
-section:first-of-type{border-top:0}
-
-/* header */
-header{padding-block:4.5rem 2.5rem}
-.byline{font-size:.95rem;color:var(--fg-2);margin-block:1.6rem .4rem}
+.lede{font-size:1.16rem;color:var(--fg-2);max-width:60ch}
+.eyebrow{font:500 .72rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+section{padding-block:3.2rem;border-top:1px solid var(--line)}
+header{padding-block:4.8rem 2.6rem}
+.byline{font-size:.95rem;color:var(--fg-2);margin-block:1.7rem .3rem}
 .affil{font-size:.88rem;color:var(--fg-3)}
-.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:1.6rem}
-.links a{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:7px;
-  border:1px solid var(--line-2);background:var(--surface);color:var(--fg);
-  text-decoration:none;font-size:.92rem;font-weight:500}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:1.7rem}
+.links a{padding:9px 17px;border-radius:8px;border:1px solid var(--line-2);
+  background:var(--surface);color:var(--fg);text-decoration:none;font-size:.93rem;font-weight:500}
 .links a:hover{border-color:var(--accent);color:var(--accent)}
+.links a.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 
-/* listening grid */
-.demo{background:var(--surface);border:1px solid var(--line);border-radius:14px;
-      padding:22px;margin-top:1.4rem}
+figure{margin:1.5rem 0 0}
+figure svg,figure img{display:block;width:100%;max-width:100%;height:auto}
+figure img{border:1px solid var(--line);border-radius:10px;background:#fff}
+figcaption{font-size:.87rem;color:var(--fg-3);margin-top:.8rem;max-width:66ch}
+.arch{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 14px}
+
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:1.5rem}
 .srcrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.srcrow button{font:500 .82rem/1 var(--mono);padding:7px 11px;border-radius:6px;
+.srcrow button{font:500 .82rem/1 var(--mono);padding:8px 12px;border-radius:7px;
   border:1px solid var(--line-2);background:var(--bg);color:var(--fg-2);cursor:pointer}
 .srcrow button:hover{border-color:var(--accent);color:var(--accent)}
 .srcrow button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -88,89 +86,161 @@ header{padding-block:4.5rem 2.5rem}
       padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
 .origrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
 .gridscroll{overflow-x:auto;margin-inline:-4px;padding-inline:4px}
-table.grid{border-collapse:separate;border-spacing:5px;min-width:520px}
+table.grid{border-collapse:separate;border-spacing:5px;min-width:520px;width:100%}
 table.grid th{font:500 .74rem/1 var(--mono);color:var(--fg-3);font-weight:500;padding-bottom:3px}
-table.grid th.rowlab{text-align:right;padding-right:9px;white-space:nowrap;
-  font-family:var(--body);font-size:.86rem;color:var(--fg-2)}
-.play{display:block;width:100%;min-width:52px;padding:11px 6px;border-radius:7px;
-  border:1px solid transparent;cursor:pointer;color:var(--ink-on-ramp);
-  font:500 .8rem/1 var(--mono);transition:transform .08s ease}
+table.grid th.rowlab{text-align:right;padding-right:10px;white-space:nowrap;
+  font:500 .88rem/1.3 var(--body);color:var(--fg-2)}
+.play{display:block;width:100%;min-width:52px;padding:12px 6px;border-radius:7px;
+  border:1px solid transparent;cursor:pointer;font:500 .8rem/1 var(--mono);
+  transition:transform .08s ease}
 .play:hover{transform:translateY(-1px)}
 .play[data-playing="true"]{outline:2px solid var(--fg);outline-offset:1px}
 .play.orig{background:var(--surface-2);color:var(--fg);border-color:var(--line-2);
-  width:auto;padding:11px 20px;font-family:var(--body)}
+  width:auto;padding:12px 22px;font-family:var(--body)}
 .lv1{background:var(--a1)}.lv2{background:var(--a2)}.lv3{background:var(--a3)}
 .lv4{background:var(--a4)}.lv5{background:var(--a5)}.lv6{background:var(--a6)}.lv7{background:var(--a7)}
-.scalecap{display:flex;justify-content:space-between;font:400 .76rem/1 var(--mono);
-  color:var(--fg-3);margin-top:10px}
+/* ink chosen per step by measured contrast: white on the pale light-mode chips
+   falls to 2.6:1, so the switch happens at lv6, not lv4. --ink-lo is near-white
+   in dark mode, where every step is dark enough to take light ink. */
+.lv1,.lv2,.lv3,.lv4,.lv5{color:var(--ink-lo)}
+.lv6,.lv7{color:var(--ink-hi)}
+.ramp{display:block;width:100%;height:auto;margin-top:14px;color:var(--fg-2)}
+.ramp .d1{fill:var(--a1)}.ramp .d2{fill:var(--a2)}.ramp .d3{fill:var(--a3)}
+.ramp .d4{fill:var(--a4)}.ramp .d5{fill:var(--a5)}.ramp .d6{fill:var(--a6)}.ramp .d7{fill:var(--a7)}
+.ramp .face{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.ramp .pupil{fill:currentColor;stroke:none}
+.ramp .curve{fill:none;stroke:currentColor;stroke-width:1.8;opacity:.4}
+.ramp .lbl{fill:currentColor;opacity:.65;font:500 11px var(--mono);letter-spacing:.06em}
+.ramp .dot{stroke:var(--surface);stroke-width:1.5}
 
-/* tables */
 .tablescroll{overflow-x:auto}
-table.data{border-collapse:collapse;width:100%;min-width:480px;font-size:.93rem;
+table.data{border-collapse:collapse;width:100%;min-width:490px;font-size:.93rem;
   font-variant-numeric:tabular-nums}
-table.data th,table.data td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line)}
-table.data th{font:500 .76rem/1.3 var(--mono);color:var(--fg-3);text-transform:uppercase;
-  letter-spacing:.06em;vertical-align:bottom}
+table.data th,table.data td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--line)}
+table.data th{font:500 .74rem/1.3 var(--mono);color:var(--fg-3);text-transform:uppercase;
+  letter-spacing:.07em;vertical-align:bottom}
 table.data th:first-child,table.data td:first-child{text-align:left}
 table.data tbody tr.ours{background:var(--accent-weak)}
 table.data tbody tr.ours td{font-weight:600}
 table.data td.best{color:var(--ok);font-weight:600}
-caption{caption-side:bottom;text-align:left;font-size:.84rem;color:var(--fg-3);padding-top:10px}
+caption{caption-side:bottom;text-align:left;font-size:.85rem;color:var(--fg-3);padding-top:11px}
 
-figure{margin:1.4rem 0 0}
-figure img{display:block;width:100%;max-width:100%;border:1px solid var(--line);
-  border-radius:10px;background:#fff}
-figcaption{font-size:.86rem;color:var(--fg-3);margin-top:.7rem}
-
-.note{border-left:3px solid var(--line-2);padding:2px 0 2px 16px;color:var(--fg-2);
-  font-size:.94rem;margin:1.2rem 0}
+.note{border-left:3px solid var(--accent);padding:3px 0 3px 17px;color:var(--fg-2);
+  font-size:.95rem;margin:1.3rem 0}
 pre{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
-  padding:14px 16px;overflow-x:auto;font:400 .84rem/1.6 var(--mono);margin:0}
+  padding:15px 17px;overflow-x:auto;font:400 .84rem/1.6 var(--mono);margin:0}
 code{font:400 .9em var(--mono)}
-ul{padding-left:1.1rem;max-width:66ch}li{margin-block:.35rem}
-footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
-  font-size:.87rem;color:var(--fg-3)}
+footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.87rem;color:var(--fg-3)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-
 <div class="wrap">
 
 <header>
   <p class="eyebrow">Speech emotion conversion</p>
   <h1>TargetSEC</h1>
-  <p class="lede" style="margin-top:1rem">Move a recorded utterance to a target arousal level without
-  touching what was said or who said it &mdash; by diffusing a 128-dimensional style vector instead of
-  a spectrogram.</p>
+  <p class="lede" style="margin-top:1.1rem">Move a recorded utterance to a target arousal level
+  without changing what was said or who said it &mdash; by diffusing a 128-dimensional style vector
+  instead of a spectrogram.</p>
   <p class="byline">Constantin Alexander Auga</p>
   <p class="affil">Hasso Plattner Institute / University of Potsdam</p>
   <nav class="links">
+    <a class="primary" href="#listen">Listen</a>
     <a href="https://arxiv.org/abs/2606.07293">Paper</a>
-    <a href="#listen">Listen</a>
     <a href="#results">Results</a>
-    <a href="https://github.com/Conscht/EmoConv-LDM">Code</a>
+    <a href="https://github.com/Conscht/TargetSEC">Code</a>
   </nav>
 </header>
 
 <section>
-  <h2>What it does</h2>
+  <h2>The idea</h2>
   <p>Speech emotion conversion changes the emotion of an utterance while keeping its words and its
-  speaker. On acted corpora this is comparatively easy; on in-the-wild podcast speech &mdash;
-  non-parallel, noisy, unevenly recorded &mdash; existing fixed-duration systems either shift the
-  emotion and wreck the audio, or keep the audio clean and barely shift the emotion.</p>
+  speaker. On acted corpora this is comparatively easy. On in-the-wild podcast speech &mdash;
+  non-parallel, noisy, unevenly recorded &mdash; existing fixed-duration systems tend to land at one
+  of two extremes: shift the emotion and wreck the audio, or keep the audio clean and barely shift
+  the emotion.</p>
 
-  <p>TargetSEC separates the two. A HiFi-GAN decoder is conditioned on three things: HuBERT content
-  tokens, a WavLM speaker vector, and a 128-dimensional style vector. During training the style
-  vector comes from a mel style encoder. <strong>At inference that encoder is removed and a latent
-  diffusion model generates the style vector instead</strong>, conditioned on speaker identity and a
-  continuous target arousal. Diffusion happens in a 128-dimensional space, not over a spectrogram,
-  so the generative step never has to produce audio &mdash; it only has to produce a conditioning
-  vector the decoder already knows how to use.</p>
+  <p>TargetSEC separates the two problems. A HiFi-GAN decoder takes three inputs: content, speaker,
+  and a 128-dimensional style vector. During training the style vector comes from a mel style
+  encoder reading the source audio. <strong>At inference that encoder is removed and a latent
+  diffusion model generates the style vector in its place</strong>, conditioned on speaker identity
+  and a continuous target arousal.</p>
 
-  <p>The decoder is untouched at inference time. Any continuous or discrete style conditioning can
-  be swapped in by retraining only the diffusion prior, which is a few million parameters rather
-  than the whole synthesis stack.</p>
+  <figure class="arch">
+    <svg viewBox="0 0 800 320" role="img" xmlns="http://www.w3.org/2000/svg"
+         aria-label="The decoder takes content, speaker and style. The style input has two possible
+         sources: during training a mel style encoder reading the source audio, and at inference a
+         latent diffusion model driven by target arousal and speaker. The decoder itself is
+         identical in both cases.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+                orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+                orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="#6b3fa0"/>
+        </marker>
+      </defs>
+
+      <g fill="none" stroke="currentColor" stroke-width="1.3" opacity=".8">
+        <rect x="150" y="26"  width="186" height="42" rx="7"/>
+        <rect x="150" y="84"  width="186" height="42" rx="7"/>
+        <rect x="150" y="142" width="186" height="42" rx="7" stroke-dasharray="5 4"/>
+        <rect x="470" y="60"  width="152" height="150" rx="9" stroke-width="1.8"/>
+      </g>
+      <rect x="150" y="226" width="186" height="56" rx="7" fill="none"
+            stroke="var(--accent)" stroke-width="1.8"/>
+
+      <g font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="currentColor">
+        <text x="243" y="52"  text-anchor="middle">HuBERT km100</text>
+        <text x="243" y="110" text-anchor="middle">WavLM speaker</text>
+        <text x="243" y="168" text-anchor="middle">mel style encoder</text>
+        <text x="546" y="128" text-anchor="middle" font-size="14">HiFi-GAN V1</text>
+        <text x="546" y="149" text-anchor="middle" font-size="12" opacity=".65">decoder</text>
+      </g>
+      <text x="243" y="250" text-anchor="middle" font-family="IBM Plex Sans, sans-serif"
+            font-size="12.5" font-weight="600" fill="var(--accent)">latent diffusion</text>
+      <text x="243" y="269" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+            font-size="10" fill="var(--accent)" opacity=".8">v-param, 100 steps</text>
+
+      <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity=".55">
+        <text x="16" y="44">source</text><text x="16" y="57">audio</text>
+        <text x="16" y="247">target</text><text x="16" y="260">arousal</text>
+        <text x="16" y="273">+ speaker</text>
+        <text x="403" y="40"  text-anchor="middle">content 128</text>
+        <text x="403" y="98"  text-anchor="middle">speaker 512</text>
+        <text x="403" y="156" text-anchor="middle">style 128</text>
+        <text x="700" y="130" text-anchor="middle">converted</text>
+        <text x="700" y="144" text-anchor="middle">waveform</text>
+      </g>
+
+      <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#ar)" opacity=".75">
+        <path d="M86 47 H150"/>
+        <path d="M100 47 V105 H150"/>
+        <path d="M100 47 V163 H150"/>
+        <path d="M336 47 H470"/>
+        <path d="M336 105 H470"/>
+        <path d="M622 135 H660"/>
+      </g>
+      <path d="M336 163 H430 V186 H470" stroke="currentColor" stroke-width="1.3" fill="none"
+            marker-end="url(#ar)" stroke-dasharray="5 4" opacity=".75"/>
+      <path d="M86 254 H150" stroke="var(--accent)" stroke-width="1.6" fill="none"
+            marker-end="url(#arA)"/>
+      <path d="M336 254 H430 V186 H470" stroke="var(--accent)" stroke-width="1.9" fill="none"
+            marker-end="url(#arA)"/>
+
+      <g font-family="IBM Plex Mono, monospace" font-size="10">
+        <text x="437" y="178" fill="currentColor" opacity=".5">training</text>
+        <text x="437" y="232" fill="var(--accent)">inference</text>
+      </g>
+      <circle cx="470" cy="186" r="4.5" fill="var(--accent)"/>
+    </svg>
+    <figcaption>One slot, two sources. The decoder is identical in both passes &mdash; only what
+    fills the style input changes, which is why the diffusion prior can be retrained for a different
+    style descriptor without touching the synthesis backbone.</figcaption>
+  </figure>
 </section>
 
 <section id="listen">
@@ -178,20 +248,45 @@ footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
   <p>Five utterances from the MSP-Podcast Test1 partition, each converted to all seven arousal levels
   by TargetSEC and by the HiFi-GAN baseline. The sources were drawn at random by fixed seed before
   any output was heard, and these are the first five of that draw &mdash; not a selection made after
-  listening. Clips are taken verbatim from the full test-set evaluation behind the numbers below. All audio is
-  RMS-normalised to &minus;26&nbsp;dBFS, so what you hear is not a loudness difference.</p>
+  listening. Clips come verbatim from the full test-set evaluation behind the numbers below, and all
+  are RMS-normalised to &minus;26&nbsp;dBFS so you are not hearing a loudness difference.</p>
 
   <div class="demo">
     <div class="srcrow" id="srcrow" role="group" aria-label="Choose a source utterance"></div>
     <p class="meta" id="meta"></p>
     <div class="origrow">
       <button class="play orig" id="orig" type="button">&#9654;&nbsp; Original</button>
-      <span class="eyebrow" id="origmeta"></span>
+      <span class="eyebrow" id="origmeta" style="color:var(--fg-3)"></span>
     </div>
     <div class="gridscroll">
       <table class="grid" id="grid"></table>
     </div>
-    <p class="scalecap"><span>1 &mdash; calm</span><span>7 &mdash; activated</span></p>
+
+    <svg class="ramp" viewBox="0 0 700 90" role="img" xmlns="http://www.w3.org/2000/svg"
+         aria-label="The seven levels run from calm at level one to activated at level seven.">
+      <g class="face" transform="translate(25,60)">
+        <circle r="15"/>
+        <circle class="pupil" cx="-5.5" cy="-4" r="1.7"/>
+        <circle class="pupil" cx="5.5" cy="-4" r="1.7"/>
+        <path d="M-6.5 6.5 H6.5"/>
+      </g>
+      <g class="face" transform="translate(675,26)">
+        <circle r="15"/>
+        <circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
+        <circle class="pupil" cx="5.5" cy="-5.5" r="1.9"/>
+        <path d="M-7 2.5 Q0 11 7 2.5 Z"/>
+      </g>
+      <path class="curve" d="M52 64 C160 64 205 58 300 47 C395 36 480 29 648 26"/>
+      <circle class="dot d1" cx="52"  cy="64"   r="5.5"/>
+      <circle class="dot d2" cx="151" cy="62"   r="5.5"/>
+      <circle class="dot d3" cx="250" cy="53.5" r="5.5"/>
+      <circle class="dot d4" cx="350" cy="42.5" r="5.5"/>
+      <circle class="dot d5" cx="449" cy="34"   r="5.5"/>
+      <circle class="dot d6" cx="548" cy="29"   r="5.5"/>
+      <circle class="dot d7" cx="648" cy="26"   r="5.5"/>
+      <text class="lbl" x="52" y="85">1 &#183; CALM</text>
+      <text class="lbl" x="648" y="85" text-anchor="end">7 &#183; ACTIVATED</text>
+    </svg>
   </div>
 </section>
 
@@ -199,7 +294,7 @@ footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
   <h2>Results</h2>
   <p>Full MSP-Podcast Test1: 16,903 utterances &times; 7 target levels = 118,321 conversions per
   system. Training used the official Train partition with Development held out for checkpoint
-  selection; Test1 was never trained on.</p>
+  selection.</p>
 
   <div class="tablescroll">
   <table class="data">
@@ -219,27 +314,44 @@ footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
   </table>
   </div>
 
-  <p style="margin-top:1.6rem">Two measures that do not share a model with the training objective:
-  on an independent IEMOCAP-trained recogniser, the rank correlation between requested arousal and
+  <p style="margin-top:1.7rem">Two measures that share no model with the training objective: on an
+  independent IEMOCAP-trained recogniser, the rank correlation between requested arousal and
   high-arousal posterior is <strong>0.450</strong> for TargetSEC against 0.325 for the baseline.
-  ECAPA-TDNN speaker similarity is 0.351 &plusmn; 0.12, against 0.370 for the baseline and a
-  random-pair floor of 0.05.</p>
+  ECAPA-TDNN speaker similarity is 0.351&nbsp;&plusmn;&nbsp;0.12, against 0.370 for the baseline and
+  a random-pair floor of 0.05.</p>
 
   <p class="note">Aggregating the 118,321 matched pairs by speaker, TargetSEC has the lower arousal
-  error for <strong>58 of 60</strong> Test1 speakers (paired <em>t</em>-test, p &lt; 10<sup>&minus;19</sup>).
-  This establishes the gap on this test set for these models; it is not a claim about variance
-  across training seeds.</p>
+  error for <strong>58 of 60</strong> Test1 speakers (paired <em>t</em>-test,
+  p&nbsp;&lt;&nbsp;10<sup>&minus;19</sup>). This establishes the gap on this test set for these
+  models; it is not a claim about variance across training seeds.</p>
 
   <figure>
     <img src="arousal-results.png" alt="Two bar charts over arousal levels 1 to 7. Left: arousal
       conversion error, where TargetSEC is lowest at levels 2 through 6 and highest at level 7.
       Right: WVMOS, where TargetSEC is highest at all seven levels while the HiFi-GAN baseline
       declines steadily as arousal rises.">
-    <figcaption>Per-level behaviour. TargetSEC leads on conversion error through the mid-range and
-    holds its audio quality across the whole scale, where the baseline degrades steadily as arousal
-    rises. Level 7 is the one place TargetSEC loses: extreme arousal is strongly tied to speech-rate
-    change, and a fixed-duration mapping cannot compress or stretch the utterance to match.</figcaption>
+    <figcaption>Per-level behaviour against both published baselines. TargetSEC leads on conversion
+    error through the mid-range and holds its audio quality across the whole scale, where the
+    HiFi-GAN baseline degrades steadily as arousal rises.</figcaption>
   </figure>
+</section>
+
+<section>
+  <h2>Where it fails</h2>
+  <p>Level 7 is the one place TargetSEC loses, and it loses to every system compared:
+  0.148 L<sub>mse</sub> against 0.110&ndash;0.123 for the others. The cause is structural rather
+  than a tuning problem.</p>
+
+  <p>Extreme arousal in real speech is carried substantially by <strong>speech rate</strong> &mdash;
+  people speed up when agitated and slow down when subdued. TargetSEC maps a fixed-duration
+  utterance to a fixed-duration utterance: it can change timbre, energy and spectral shape, but it
+  cannot compress or stretch the utterance in time. Everything available to it saturates before the
+  top of the scale, which is visible in the figure above as the error curve turning back up.</p>
+
+  <p>It is also why the duration-predicting <em>Uncert</em> baseline, otherwise behind on both
+  naturalness and conversion error, holds up better at the extremes. Adding a duration predictor is
+  the obvious next step, and this is an honest limitation of the fixed-duration framing rather than
+  something a longer training run would fix.</p>
 </section>
 
 <section>
@@ -259,28 +371,28 @@ footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
     <caption>Same decoder throughout; only the style prior changes.</caption>
   </table>
   </div>
-  <p style="margin-top:1.4rem">Replacing regression with diffusion and adding speaker conditioning
-  each lower the conversion error. WVMOS moves the other way, and that ordering is the point: a
+  <p style="margin-top:1.5rem">Replacing regression with diffusion and adding speaker conditioning
+  each lower the conversion error, and WVMOS moves the other way. That ordering is the point: a
   deterministic MLP collapses toward the corpus mean style, which vocodes cleanly and converts
   poorly. Higher WVMOS here indicates a safer, less committed prediction, not a better conversion.</p>
 </section>
 
 <section>
-  <h2>Repository</h2>
-  <pre>train/      the four pipeline stages, the baseline, the pre-flight loss gate
-eval/       benchmarks, WVMOS, WER, speaker similarity, IEMOCAP, significance
-tools/      figures, grid search, regeneration utilities
+  <h2>Code</h2>
+  <pre>train/   the four pipeline stages, the baseline, the pre-flight loss gate
+eval/    benchmarks, WVMOS, WER, speaker similarity, IEMOCAP, significance
+tools/   figures, grid search, regeneration utilities
+tests/   ten checks: loss gradients, mel equivalence, the split guard
 src/
   dataset.py                  Train / Development / Test1 loaders, split guard
-  synthesizer_style_module.py Stage 1-2: decoder + mel style encoder
-  diffusion_module_fixed.py   Stage 4: the latent style LDM (v-parameterised)
+  synthesizer_style_module.py Stages 1-2: decoder + mel style encoder
+  diffusion_module_fixed.py   Stage 4: the latent style LDM
   decoder/decoder.py          HiFi-GAN generator, MPD + MSD discriminators
-  emotion/emotion_encoder.py  Frozen SER, differentiable wrapper, CCC
-processing/
-  mel_differentiable.py       torch mel that keeps the graph intact</pre>
-  <p style="margin-top:1.2rem">Checkpoints and evaluation outputs are not in the repository; the
-  paths they are expected at are listed in <code>docs/frozen_checkpoints.md</code>. Training needs
-  MSP-Podcast v1.10, which is obtained under licence from the University of Texas at Dallas.</p>
+  emotion/emotion_encoder.py  Frozen SER, differentiable wrapper, CCC</pre>
+  <p style="margin-top:1.3rem">Training needs MSP-Podcast v1.10, obtained under licence from the
+  University of Texas at Dallas. Checkpoints are not in the repository; the paths they are expected
+  at are listed in the manifest. See
+  <a href="https://github.com/Conscht/TargetSEC">github.com/Conscht/TargetSEC</a>.</p>
 </section>
 
 <section>
@@ -322,9 +434,9 @@ function stop(){
   if(playingBtn){playingBtn.dataset.playing="false"; playingBtn=null;}
 }
 function play(src,btn){
-  const again = (playingBtn===btn);
+  const again=(playingBtn===btn);
   stop();
-  if(again) return;                       // clicking the playing button stops it
+  if(again) return;
   audio=new Audio(src); audio.play().catch(()=>{});
   btn.dataset.playing="true"; playingBtn=btn;
   audio.onended=stop; audio.onerror=stop;
@@ -333,7 +445,7 @@ function play(src,btn){
 SOURCES.forEach(s=>{
   const b=document.createElement('button');
   b.type="button"; b.textContent=String(s.n).padStart(2,'0');
-  b.setAttribute('aria-pressed', s===cur ? 'true':'false');
+  b.setAttribute('aria-pressed', s===cur?'true':'false');
   b.onclick=()=>{cur=s; render();};
   srcrow.appendChild(b);
 });
@@ -341,7 +453,7 @@ SOURCES.forEach(s=>{
 function render(){
   stop();
   [...srcrow.children].forEach((b,i)=>
-    b.setAttribute('aria-pressed', SOURCES[i]===cur ? 'true':'false'));
+    b.setAttribute('aria-pressed', SOURCES[i]===cur?'true':'false'));
   meta.textContent=`${cur.file}  ·  speaker ${cur.spk}  ·  ${cur.g}  ·  ${cur.dur}`;
   origMeta.textContent=`annotated arousal ${cur.ar} of 7`;
   origBtn.onclick=()=>play(`audio/${cur.tag}__ORIGINAL_arousal${cur.ar}.ogg`,origBtn);
@@ -357,8 +469,7 @@ function render(){
     html+='</tr>';
   });
   grid.innerHTML=html+'</tbody>';
-  grid.querySelectorAll('button.play').forEach(b=>
-    b.onclick=()=>play(b.dataset.src,b));
+  grid.querySelectorAll('button.play').forEach(b=>b.onclick=()=>play(b.dataset.src,b));
 }
 render();
 </script>
