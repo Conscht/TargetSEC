@@ -5,6 +5,7 @@
 [![Dataset](https://img.shields.io/badge/dataset-MSP--Podcast%20v1.10-4C4858?style=for-the-badge)](https://ecs.utdallas.edu/research/researchlabs/msp-lab/MSP-Podcast.html)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.3.1-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
 [![Licence](https://img.shields.io/badge/licence-MIT-2E7D54?style=for-the-badge)](LICENSE)
+
 **Plug-and-play in-the-wild speech emotion conversion via arousal-conditioned latent style diffusion.**
 
 Move a recorded utterance to a target arousal level without changing what was said or who said it.
