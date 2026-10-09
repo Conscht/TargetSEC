@@ -241,6 +241,13 @@ Test1.
 
 ---
 
+## Acknowledgements
+
+Thanks to the Signal Processing group at Universität Hamburg for their guidance in the early
+stages of this work; to the AI and Intelligent Systems chair of Prof. Gerard de Melo at the
+University of Potsdam for obtaining the MSP-Podcast licence; and to Jiarui Hai for academic
+discussion and guidance through the later phases of the project.
+
 ## Citation
 
 ```bibtex
