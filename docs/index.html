@@ -73,7 +73,7 @@ p{margin:0 0 1rem;max-width:66ch}
 .lede{font-size:1.16rem;color:var(--fg-2);max-width:60ch}
 .eyebrow{font:500 .72rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 section{padding-block:3.2rem;border-top:1px solid var(--line)}
-header{padding-block:4.8rem 2.6rem}
+header{padding-block:2.8rem 2.6rem}
 .byline{font-size:.95rem;color:var(--fg-2);margin-block:1.7rem .3rem}
 .affil{font-size:.88rem;color:var(--fg-3)}
 .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:1.7rem}
@@ -82,12 +82,12 @@ header{padding-block:4.8rem 2.6rem}
 .links a:hover{border-color:var(--accent);color:var(--accent)}
 .links a.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 
-.wave{display:block;width:100%;height:auto;margin-top:2.4rem}
+.wave{display:block;width:100%;height:auto}
 .wave polygon{stroke:none}
 .wave .w1{fill:var(--w1)}.wave .w2{fill:var(--w2)}.wave .w3{fill:var(--w3)}
 .wave .w4{fill:var(--w4)}.wave .w5{fill:var(--w5)}.wave .w6{fill:var(--w6)}
 .wave .w7{fill:var(--w7)}
-.wavecap{display:flex;justify-content:space-between;margin-top:.5rem;
+.wavecap{display:flex;justify-content:space-between;margin:.55rem 0 2.5rem;
   font:500 .72rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3)}
 figure{margin:1.5rem 0 0}
 figure svg,figure img{display:block;width:100%;max-width:100%;height:auto}
@@ -167,19 +167,6 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">Speech emotion conversion</p>
-  <h1>TargetSEC</h1>
-  <p class="lede" style="margin-top:1.1rem">Move a recorded utterance to a target arousal level
-  without changing what was said or who said it &mdash; by generating a style vector that conditions
-  the decoder, rather than the spectrogram itself.</p>
-  <p class="byline">Constantin Alexander Auga</p>
-  <p class="affil">Hasso Plattner Institute / University of Potsdam</p>
-  <nav class="links">
-    <a class="primary" href="#listen">Listen</a>
-    <a href="https://arxiv.org/abs/2606.07293">Paper</a>
-    <a href="#results">Results</a>
-    <a href="https://github.com/Conscht/TargetSEC">Code</a>
-  </nav>
   <!-- wave:begin -->
   <svg class="wave" viewBox="0 0 1200 132" role="img" xmlns="http://www.w3.org/2000/svg"
        aria-label="One utterance converted to all seven arousal levels, drawn as amplitude envelopes growing from calm on the left to activated on the right.">
@@ -193,6 +180,19 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
   </svg>
   <!-- wave:end -->
   <p class="wavecap"><span>1 &#183; calm</span><span>one utterance, seven levels</span><span>7 &#183; activated</span></p>
+  <p class="eyebrow">Speech emotion conversion</p>
+  <h1>TargetSEC</h1>
+  <p class="lede" style="margin-top:1.1rem">Move a recorded utterance to a target arousal level
+  without changing what was said or who said it &mdash; by generating a style vector that conditions
+  the decoder, rather than the spectrogram itself.</p>
+  <p class="byline">Constantin Alexander Auga</p>
+  <p class="affil">Hasso Plattner Institute / University of Potsdam</p>
+  <nav class="links">
+    <a class="primary" href="#listen">Listen</a>
+    <a href="https://arxiv.org/abs/2606.07293">Paper</a>
+    <a href="#results">Results</a>
+    <a href="https://github.com/Conscht/TargetSEC">Code</a>
+  </nav>
 </header>
 
 <section>
