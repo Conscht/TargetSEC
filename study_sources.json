@@ -1,0 +1,92 @@
+[
+ {
+  "src": 1,
+  "file": "MSP-PODCAST_0047_0238.wav",
+  "idx": 342,
+  "arousal": 4.0,
+  "spk": "35",
+  "gender": "Male",
+  "dur": 3.45
+ },
+ {
+  "src": 2,
+  "file": "MSP-PODCAST_0167_0204.wav",
+  "idx": 1277,
+  "arousal": 3.5,
+  "spk": "133",
+  "gender": "Female",
+  "dur": 5.39
+ },
+ {
+  "src": 3,
+  "file": "MSP-PODCAST_0184_0274.wav",
+  "idx": 1512,
+  "arousal": 4.08,
+  "spk": "18",
+  "gender": "Male",
+  "dur": 4.81
+ },
+ {
+  "src": 4,
+  "file": "MSP-PODCAST_0193_0288.wav",
+  "idx": 1837,
+  "arousal": 3.8,
+  "spk": "59",
+  "gender": "Male",
+  "dur": 3.06
+ },
+ {
+  "src": 5,
+  "file": "MSP-PODCAST_0211_0323.wav",
+  "idx": 2128,
+  "arousal": 3.666667,
+  "spk": "63",
+  "gender": "Female",
+  "dur": 4.7
+ },
+ {
+  "src": 6,
+  "file": "MSP-PODCAST_0295_1773.wav",
+  "idx": 3530,
+  "arousal": 3.5,
+  "spk": "4",
+  "gender": "Male",
+  "dur": 4.16
+ },
+ {
+  "src": 7,
+  "file": "MSP-PODCAST_0483_0120.wav",
+  "idx": 4370,
+  "arousal": 4.333333,
+  "spk": "150",
+  "gender": "Female",
+  "dur": 6.05
+ },
+ {
+  "src": 8,
+  "file": "MSP-PODCAST_0498_0376_0001.wav",
+  "idx": 4478,
+  "arousal": 4.166667,
+  "spk": "80",
+  "gender": "Male",
+  "dur": 6.07
+ },
+ {
+  "src": 9,
+  "file": "MSP-PODCAST_0615_0175.wav",
+  "idx": 5982,
+  "arousal": 4.0,
+  "spk": "138",
+  "gender": "Male",
+  "dur": 6.83
+ },
+ {
+  "src": 10,
+  "file": "MSP-PODCAST_1676_0024_0048.wav",
+  "idx": 11487,
+  "arousal": 3.6,
+  "spk": "976",
+  "gender": "Female",
+  "dur": 4.45
+ }
+]
