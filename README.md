@@ -222,6 +222,18 @@ Scripts under `eval/` and `tools/` still carry cluster-specific *defaults* for o
 the ones used in the pipeline above take them as arguments instead. Run every script from the
 repository root.
 
+### Tests
+
+```bash
+PYTHONPATH="$PWD" pytest tests -q
+```
+
+Ten checks, no GPU, corpus or network required. They cover the two failure modes that invalidated
+an earlier revision: that the mel reconstruction loss and the CCC emotion loss both carry
+gradients rather than being computed and discarded, that the torch mel still matches the
+TacotronSTFT that wrote every cached `*_mel.pt`, and that the loaders refuse to be pointed at
+Test1.
+
 ---
 
 ## Citation
