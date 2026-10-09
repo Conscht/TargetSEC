@@ -175,9 +175,10 @@ footer{border-top:1px solid var(--line);padding-block:2rem 3.5rem;
 
 <section id="listen">
   <h2>Listen</h2>
-  <p>Ten utterances from the MSP-Podcast Test1 partition, each converted to all seven arousal levels
-  by TargetSEC and by the HiFi-GAN baseline. Clips are taken verbatim from the full test-set
-  evaluation behind the numbers below &mdash; nothing was re-synthesised or hand-picked. All audio is
+  <p>Five utterances from the MSP-Podcast Test1 partition, each converted to all seven arousal levels
+  by TargetSEC and by the HiFi-GAN baseline. The sources were drawn at random by fixed seed before
+  any output was heard, and these are the first five of that draw &mdash; not a selection made after
+  listening. Clips are taken verbatim from the full test-set evaluation behind the numbers below. All audio is
   RMS-normalised to &minus;26&nbsp;dBFS, so what you hear is not a loudness difference.</p>
 
   <div class="demo">
@@ -310,12 +311,7 @@ const SOURCES=[
  {n:2, tag:"src02_spk133_F", spk:"133", g:"Female", ar:"3.50", dur:"5.4 s", file:"MSP-PODCAST_0167_0204"},
  {n:3, tag:"src03_spk018_M", spk:"018", g:"Male",   ar:"4.08", dur:"4.8 s", file:"MSP-PODCAST_0184_0274"},
  {n:4, tag:"src04_spk059_M", spk:"059", g:"Male",   ar:"3.80", dur:"3.1 s", file:"MSP-PODCAST_0193_0288"},
- {n:5, tag:"src05_spk063_F", spk:"063", g:"Female", ar:"3.67", dur:"4.7 s", file:"MSP-PODCAST_0211_0323"},
- {n:6, tag:"src06_spk004_M", spk:"004", g:"Male",   ar:"3.50", dur:"4.2 s", file:"MSP-PODCAST_0295_1773"},
- {n:7, tag:"src07_spk150_F", spk:"150", g:"Female", ar:"4.33", dur:"6.1 s", file:"MSP-PODCAST_0483_0120"},
- {n:8, tag:"src08_spk080_M", spk:"080", g:"Male",   ar:"4.17", dur:"6.1 s", file:"MSP-PODCAST_0498_0376_0001"},
- {n:9, tag:"src09_spk138_M", spk:"138", g:"Male",   ar:"4.00", dur:"6.8 s", file:"MSP-PODCAST_0615_0175"},
- {n:10,tag:"src10_spk976_F", spk:"976", g:"Female", ar:"3.60", dur:"4.5 s", file:"MSP-PODCAST_1676_0024_0048"}
+ {n:5, tag:"src05_spk063_F", spk:"063", g:"Female", ar:"3.67", dur:"4.7 s", file:"MSP-PODCAST_0211_0323"}
 ];
 const SYSTEMS=[["targetsec","TargetSEC"],["hifigan","HiFi-GAN baseline"]];
 
