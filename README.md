@@ -1,5 +1,11 @@
 # TargetSEC
 
+[![Demo](https://img.shields.io/badge/demo-listen-6B3FA0?style=for-the-badge&logo=githubpages&logoColor=white)](https://conscht.github.io/TargetSEC/)
+[![Paper](https://img.shields.io/badge/paper-arXiv%3A2606.07293-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2606.07293)
+[![Dataset](https://img.shields.io/badge/dataset-MSP--Podcast%20v1.10-4C4858?style=for-the-badge)](https://ecs.utdallas.edu/research/researchlabs/msp-lab/MSP-Podcast.html)
+[![PyTorch](https://img.shields.io/badge/pytorch-2.3.1-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![Licence](https://img.shields.io/badge/licence-MIT-2E7D54?style=for-the-badge)](LICENSE)
+
 **Plug-and-play in-the-wild speech emotion conversion via arousal-conditioned latent style diffusion.**
 
 Move a recorded utterance to a target arousal level without changing what was said or who said it.
@@ -8,7 +14,6 @@ A HiFi-GAN decoder is conditioned on HuBERT content tokens, a WavLM speaker vect
 inference that encoder is removed and a latent diffusion model generates the style vector instead,
 conditioned on speaker identity and continuous target arousal. The decoder is never modified.
 
-**[Listen to examples](https://conscht.github.io/TargetSEC/)** · [Paper](https://arxiv.org/abs/2606.07293)
 
 ---
 
