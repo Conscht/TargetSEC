@@ -48,7 +48,7 @@ def envelope(path, n=460):
     return e / (e.max() + 1e-9)
 
 
-def emoji(ax, x, y, cp, px=46):
+def emoji(ax, x, y, cp, px=66):
     """Composite a Noto Color Emoji PNG at (x, y), px wide in device pixels."""
     f = os.path.join(ROOT, "tools", "emoji", f"emoji_u{cp}.png")
     img = mpimg.imread(f)
@@ -72,13 +72,13 @@ for c in range(1, 8):
 
 # ── caption, faces at the ends ──────────────────────────────────────────────
 cy = 0.565
-emoji(ax, x0 + 0.010, cy, "1f634")
-emoji(ax, x1 - 0.010, cy, "1f929")
-ax.text(x0 + 0.036, cy, "1  ·  CALM", color=MUTED, fontsize=11.5, family="DejaVu Sans",
+emoji(ax, x0 + 0.017, cy, "1f634")
+emoji(ax, x1 - 0.017, cy, "1f929")
+ax.text(x0 + 0.044, cy, "1  ·  CALM", color=MUTED, fontsize=11.5, family="DejaVu Sans",
         ha="left", va="center")
 ax.text(0.5, cy, "ONE UTTERANCE, SEVEN LEVELS", color=MUTED, fontsize=11.5,
         family="DejaVu Sans", ha="center", va="center")
-ax.text(x1 - 0.036, cy, "7  ·  ACTIVATED", color=MUTED, fontsize=11.5,
+ax.text(x1 - 0.044, cy, "7  ·  ACTIVATED", color=MUTED, fontsize=11.5,
         family="DejaVu Sans", ha="right", va="center")
 
 # ── wordmark ────────────────────────────────────────────────────────────────
