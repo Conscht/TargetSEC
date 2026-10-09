@@ -63,6 +63,13 @@ Style    MelStyleEncoder      -> 128-dim        <- replaced at inference
 Decoder  HiFi-GAN V1          -> waveform
 ```
 
+![Architecture](docs/architecture.png)
+
+*(a) The framework. Solid arrows are training paths, dashed arrows inference-time operations — at
+inference the style encoder is replaced by the LDM and nothing else about the decoder changes.
+(b) Training of the diffusion prior: the style encoder supplies the target latent and is detached,
+so no gradient reaches it from the LDM.*
+
 At inference the style slot is filled by the diffusion prior instead:
 
 ```

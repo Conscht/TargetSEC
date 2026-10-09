@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TargetSEC</title>
 <meta name="description" content="Arousal-conditioned latent style diffusion for in-the-wild speech emotion conversion.">
+<meta property="og:title" content="TargetSEC">
+<meta property="og:description" content="Arousal-conditioned latent style diffusion for in-the-wild speech emotion conversion.">
+<meta property="og:image" content="https://conscht.github.io/TargetSEC/banner.png">
+<meta property="og:url" content="https://conscht.github.io/TargetSEC/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -348,10 +354,10 @@ const SOURCES=[
  {n:4, tag:"src04_spk059_M", spk:"059", g:"Male",   ar:"3.80", dur:"3.1 s", file:"MSP-PODCAST_0193_0288"},
  {n:5, tag:"src05_spk063_F", spk:"063", g:"Female", ar:"3.67", dur:"4.7 s", file:"MSP-PODCAST_0211_0323"}
 ];
-// Levels drawn as a face rather than a dot. [1,2,3,4,5,6,7] gives one at
-// every level; [1,4,7] anchors the two ends and the midpoint and leaves the
-// dots to carry the steps between.
-const FACE_AT=[1,4,7];
+// Levels drawn as a face rather than a dot. One per level shows the scale
+// stepping open, which is the page's claim; [1,4,7] is the sparser option,
+// anchoring the ends and the midpoint and leaving dots between.
+const FACE_AT=[1,2,3,4,5,6,7];
 
 function faceSVG(c,x,y){
   const t=(c-1)/6;                         // 0 at calm, 1 at activated
