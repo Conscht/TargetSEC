@@ -32,3 +32,7 @@ It does NOT cover:
     provided for research demonstration only.
   * Pretrained third-party models (HuBERT, WavLM, the audeering dimensional
     SER, wav2vec2-MOS), each of which carries its own licence.
+  * tools/fonts/Newsreader-Medium.ttf, by Production Type, under the SIL Open
+    Font License 1.1.
+  * tools/emoji/*.png, from Noto Color Emoji by Google, under the SIL Open
+    Font License 1.1.

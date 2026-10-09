@@ -6,9 +6,11 @@ the repo and the site read as one thing. The strip is one Test1 utterance
 converted by TargetSEC to all seven arousal levels: real amplitude envelopes,
 so the energy visibly grows from calm to activated.
 
-The end faces are drawn rather than set as emoji: the available font has a
-sleeping face but no star-struck one, its emoji are monochrome, and drawing
-them keeps both on the project's palette.
+The end emoji are the same codepoints the page uses (U+1F634, U+1F929),
+composited from Noto Color Emoji. A PNG bakes the glyph in, so unlike the
+page -- where the reader's own OS draws them and Windows shows Segoe -- one
+style has to be chosen for everyone. Noto is the closest redistributable
+match; Segoe UI Emoji is proprietary and cannot be shipped.
 
     python3 tools/make_banner.py          # writes docs/banner.png
 """
@@ -19,9 +21,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
-from matplotlib.patches import Ellipse
-from matplotlib.path import Path
-from matplotlib.patches import PathPatch
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import matplotlib.image as mpimg
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = "src01_spk035_M"
@@ -47,20 +48,14 @@ def envelope(path, n=460):
     return e / (e.max() + 1e-9)
 
 
-def face(ax, x, y, t, fill, px=30):
-    """A face whose expression opens with t, matching the page's ramp faces."""
-    rx, ry = px / W, px / H
-    ink = "#e9e4f2" if t < 0.75 else "#ffffff"
-    ax.add_patch(Ellipse((x, y), 2 * rx, 2 * ry, facecolor=fill, edgecolor="none", zorder=4))
-    er = 0.115 + 0.022 * t
-    for dx in (-0.37, 0.37):
-        ax.add_patch(Ellipse((x + rx * dx, y + ry * (0.27 + 0.11 * t)),
-                             2 * rx * er, 2 * ry * er, facecolor=ink, edgecolor="none", zorder=5))
-    m0 = y - ry * (0.33 - 0.12 * t)
-    ax.add_patch(PathPatch(
-        Path([(x - rx * .47, m0), (x, m0 - ry * 1.0 * t), (x + rx * .47, m0)],
-             [Path.MOVETO, Path.CURVE3, Path.CURVE3]),
-        fc="none", ec=ink, lw=2.0, capstyle="round", zorder=5))
+def emoji(ax, x, y, cp, px=46):
+    """Composite a Noto Color Emoji PNG at (x, y), px wide in device pixels."""
+    f = os.path.join(ROOT, "tools", "emoji", f"emoji_u{cp}.png")
+    img = mpimg.imread(f)
+    # OffsetImage zoom is image-pixels per point, and a point is DPI/72 device px
+    zoom = px / (img.shape[0] * DPI / 72)
+    ax.add_artist(AnnotationBbox(OffsetImage(img, zoom=zoom), (x, y),
+                                 frameon=False, box_alignment=(0.5, 0.5), zorder=6))
 
 
 fig = plt.figure(figsize=(W / DPI, H / DPI), dpi=DPI, facecolor=BG)
@@ -77,13 +72,13 @@ for c in range(1, 8):
 
 # ── caption, faces at the ends ──────────────────────────────────────────────
 cy = 0.565
-face(ax, x0 + 0.013, cy, 0.0, W_RAMP[0])
-face(ax, x1 - 0.013, cy, 1.0, W_RAMP[6])
-ax.text(x0 + 0.033, cy, "1  ·  CALM", color=MUTED, fontsize=11.5, family="DejaVu Sans",
+emoji(ax, x0 + 0.010, cy, "1f634")
+emoji(ax, x1 - 0.010, cy, "1f929")
+ax.text(x0 + 0.036, cy, "1  ·  CALM", color=MUTED, fontsize=11.5, family="DejaVu Sans",
         ha="left", va="center")
 ax.text(0.5, cy, "ONE UTTERANCE, SEVEN LEVELS", color=MUTED, fontsize=11.5,
         family="DejaVu Sans", ha="center", va="center")
-ax.text(x1 - 0.033, cy, "7  ·  ACTIVATED", color=MUTED, fontsize=11.5,
+ax.text(x1 - 0.036, cy, "7  ·  ACTIVATED", color=MUTED, fontsize=11.5,
         family="DejaVu Sans", ha="right", va="center")
 
 # ── wordmark ────────────────────────────────────────────────────────────────
