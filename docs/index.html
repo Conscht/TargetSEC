@@ -86,9 +86,10 @@ figcaption{font-size:.87rem;color:var(--fg-3);margin-top:.8rem;max-width:66ch}
       padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
 .origrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
 .gridscroll{overflow-x:auto;margin-inline:-4px;padding-inline:4px}
-table.grid{border-collapse:separate;border-spacing:5px;min-width:520px;width:100%}
+table.grid{border-collapse:separate;border-spacing:5px;min-width:560px;width:100%;
+  table-layout:fixed}
 table.grid th{font:500 .74rem/1 var(--mono);color:var(--fg-3);font-weight:500;padding-bottom:3px}
-table.grid th.rowlab{text-align:right;padding-right:10px;white-space:nowrap;
+table.grid th.rowlab{width:150px;text-align:right;padding-right:10px;white-space:nowrap;
   font:500 .88rem/1.3 var(--body);color:var(--fg-2)}
 .play{display:block;width:100%;min-width:52px;padding:12px 6px;border-radius:7px;
   border:1px solid transparent;cursor:pointer;font:500 .8rem/1 var(--mono);
@@ -104,10 +105,11 @@ table.grid th.rowlab{text-align:right;padding-right:10px;white-space:nowrap;
    in dark mode, where every step is dark enough to take light ink. */
 .lv1,.lv2,.lv3,.lv4,.lv5{color:var(--ink-lo)}
 .lv6,.lv7{color:var(--ink-hi)}
-.ramp{display:block;width:100%;height:auto;margin-top:14px;color:var(--fg-2)}
+.ramp{display:block;width:100%;height:auto;color:var(--fg-2);overflow:visible}
 .ramp .d1{fill:var(--a1)}.ramp .d2{fill:var(--a2)}.ramp .d3{fill:var(--a3)}
 .ramp .d4{fill:var(--a4)}.ramp .d5{fill:var(--a5)}.ramp .d6{fill:var(--a6)}.ramp .d7{fill:var(--a7)}
 .ramp .face{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.ramp .facebg{stroke:currentColor;stroke-width:1.6}
 .ramp .pupil{fill:currentColor;stroke:none}
 .ramp .curve{fill:none;stroke:currentColor;stroke-width:1.8;opacity:.4}
 .ramp .lbl{fill:currentColor;opacity:.65;font:500 11px var(--mono);letter-spacing:.06em}
@@ -262,31 +264,6 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
       <table class="grid" id="grid"></table>
     </div>
 
-    <svg class="ramp" viewBox="0 0 700 90" role="img" xmlns="http://www.w3.org/2000/svg"
-         aria-label="The seven levels run from calm at level one to activated at level seven.">
-      <g class="face" transform="translate(25,60)">
-        <circle r="15"/>
-        <circle class="pupil" cx="-5.5" cy="-4" r="1.7"/>
-        <circle class="pupil" cx="5.5" cy="-4" r="1.7"/>
-        <path d="M-6.5 6.5 H6.5"/>
-      </g>
-      <g class="face" transform="translate(675,26)">
-        <circle r="15"/>
-        <circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
-        <circle class="pupil" cx="5.5" cy="-5.5" r="1.9"/>
-        <path d="M-7 2.5 Q0 11 7 2.5 Z"/>
-      </g>
-      <path class="curve" d="M52 64 C160 64 205 58 300 47 C395 36 480 29 648 26"/>
-      <circle class="dot d1" cx="52"  cy="64"   r="5.5"/>
-      <circle class="dot d2" cx="151" cy="62"   r="5.5"/>
-      <circle class="dot d3" cx="250" cy="53.5" r="5.5"/>
-      <circle class="dot d4" cx="350" cy="42.5" r="5.5"/>
-      <circle class="dot d5" cx="449" cy="34"   r="5.5"/>
-      <circle class="dot d6" cx="548" cy="29"   r="5.5"/>
-      <circle class="dot d7" cx="648" cy="26"   r="5.5"/>
-      <text class="lbl" x="52" y="85">1 &#183; CALM</text>
-      <text class="lbl" x="648" y="85" text-anchor="end">7 &#183; ACTIVATED</text>
-    </svg>
   </div>
 </section>
 
@@ -423,6 +400,30 @@ const SOURCES=[
  {n:5, tag:"src05_spk063_F", spk:"063", g:"Female", ar:"3.67", dur:"4.7 s", file:"MSP-PODCAST_0211_0323"}
 ];
 const SYSTEMS=[["targetsec","TargetSEC"],["hifigan","HiFi-GAN baseline"]];
+const RAMP = `<tr><th class="rowlab"></th><td colspan="7" style="padding-top:10px">
+  <svg class="ramp" viewBox="0 0 700 120" role="img" xmlns="http://www.w3.org/2000/svg"
+       aria-label="The seven levels run from calm at level one to activated at level seven.">
+    <path class="curve" d="M66 81 C120 80 128 78 150 77 C250 72 300 64 350 59 C410 53 470 44 550 41 C600 39 614 37 634 37"/>
+    <circle class="dot d2" cx="150" cy="77" r="5.5"/>
+    <circle class="dot d3" cx="250" cy="69" r="5.5"/>
+    <circle class="dot d4" cx="350" cy="59" r="5.5"/>
+    <circle class="dot d5" cx="450" cy="49" r="5.5"/>
+    <circle class="dot d6" cx="550" cy="41" r="5.5"/>
+    <g class="face" transform="translate(50,82)">
+      <circle r="15" class="facebg d1"/>
+      <circle class="pupil" cx="-5.5" cy="-4" r="1.7"/>
+      <circle class="pupil" cx="5.5" cy="-4" r="1.7"/>
+      <path d="M-6.5 6 H6.5"/>
+    </g>
+    <g class="face" transform="translate(650,36)">
+      <circle r="15" class="facebg d7"/>
+      <circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
+      <circle class="pupil" cx="5.5" cy="-5.5" r="1.9"/>
+      <path d="M-7 2.5 Q0 11 7 2.5 Z"/>
+    </g>
+    <text class="lbl" x="50" y="112" text-anchor="middle">1 &#183; CALM</text>
+    <text class="lbl" x="650" y="112" text-anchor="middle">7 &#183; ACTIVATED</text>
+  </svg></td></tr>`;
 
 const srcrow=document.getElementById('srcrow'), meta=document.getElementById('meta'),
       grid=document.getElementById('grid'), origBtn=document.getElementById('orig'),
@@ -468,7 +469,7 @@ function render(){
               aria-label="${label}, arousal level ${c}">&#9654;</button></td>`;
     html+='</tr>';
   });
-  grid.innerHTML=html+'</tbody>';
+  grid.innerHTML=html+RAMP+'</tbody>';
   grid.querySelectorAll('button.play').forEach(b=>b.onclick=()=>play(b.dataset.src,b));
 }
 render();
