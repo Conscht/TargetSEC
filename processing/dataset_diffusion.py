@@ -8,10 +8,12 @@ HOP = 256  # 16kHz / 256 hop -> 62.5 fps Mel
 
 
 # ==== Default paths – adjust to your system ===============================
-DEFAULT_TENSOR_DIR = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/mel_spectograms/Train"
-DEFAULT_AUDIO_DIR  = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/Audio"
-DEFAULT_META_TRAIN = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
-DEFAULT_EMO_DIR    = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/emotion_embeddings"
+# Corpus root; see src/dataset.py. Override with TARGETSEC_DATA_ROOT.
+_ROOT = os.environ.get("TARGETSEC_DATA_ROOT", "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder")
+DEFAULT_TENSOR_DIR = f"{_ROOT}/mel_spectograms/Train"
+DEFAULT_AUDIO_DIR  = f"{_ROOT}/Audio/Audio"
+DEFAULT_META_TRAIN = f"{_ROOT}/Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
+DEFAULT_EMO_DIR    = f"{_ROOT}/emotion_embeddings"
 DEFAULT_META_VAL   = None
 # ==========================================================================
 

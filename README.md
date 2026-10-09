@@ -195,6 +195,33 @@ conda activate emoldm
 pip install -r requirements.txt
 ```
 
+### Setup
+
+Two things are not vendored here and have to be put in place before anything runs.
+
+**1. Meta-StyleSpeech.** `MelStyleEncoder` is imported from it by eleven modules, under its own
+licence, so it is not redistributed in this repository:
+
+```bash
+git clone https://github.com/KevinMIN95/StyleSpeech.git StyleSpeech
+```
+
+**2. The corpus root.** Paths default to the cluster this was developed on. Point them at your own
+copy of MSP-Podcast with one environment variable — it is read by `src/dataset.py` and
+`processing/dataset_diffusion.py`:
+
+```bash
+export TARGETSEC_DATA_ROOT=/path/to/parent/of/MSP-Podcast-1.10
+```
+
+The directory it points at is expected to contain `mel_spectograms/{Train,Development,Test1}/`,
+`Audio/Audio/`, `Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/` and
+`emotion_embeddings/`.
+
+Scripts under `eval/` and `tools/` still carry cluster-specific *defaults* for output directories;
+the ones used in the pipeline above take them as arguments instead. Run every script from the
+repository root.
+
 ---
 
 ## Citation

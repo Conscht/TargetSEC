@@ -14,7 +14,12 @@ from torch.nn.utils.rnn import pack_sequence
 #
 # Training uses Train, validation uses Development, evaluation uses Test1.
 # Test1 must never appear in a training loader -- see test_create_data_loader().
-_ROOT = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder"
+# Corpus root. Override without editing the source:
+#     export TARGETSEC_DATA_ROOT=/path/to/your/MSP-Podcast-parent
+_ROOT = os.environ.get(
+    "TARGETSEC_DATA_ROOT",
+    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder",
+)
 
 DEFAULT_TENSOR_DIR = f"{_ROOT}/mel_spectograms/Train"
 DEFAULT_AUDIO_DIR  = f"{_ROOT}/Audio/Audio"
