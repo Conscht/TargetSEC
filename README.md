@@ -153,7 +153,7 @@ sbatch slurm_jobs/evaluate_speaker.slurm       # ECAPA-TDNN similarity
 sbatch slurm_jobs/second_emotion_eval.slurm    # IEMOCAP rank correlation
 
 python stat_test_paired.py                     # speaker-clustered paired test
-python plot_arousal_figure.py                  # per-level figure, from metadata.jsonl
+python plot_arousal_figure.py                  # per-level figure (all four systems)
 ```
 
 Checkpoints are not in this repository; the paths they are expected at are listed in
@@ -177,11 +177,6 @@ guard that raises if any loader is pointed at the test partition.
 
 Preprocessing produces HuBERT km100 tokens and WavLM speaker embeddings under
 `hubert-km100/parsed_with_spkrEmbeds/`. Set the corpus root in `src/dataset.py`.
-
-> **Note on earlier results.** Numbers in this repository supersede any published before
-> August 2026. An earlier revision pointed the training loaders at Test1; the split was corrected,
-> both systems were retrained from scratch on Train, and every figure here was recomputed on the
-> clean split.
 
 ---
 

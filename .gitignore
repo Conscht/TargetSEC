@@ -47,3 +47,6 @@ docs/audio/*.wav
 train_synthesizer.log
 wav2vec2_checkpoints/
 config/3ed.json
+.vscode/
+ser_wvmos_by_arousal.*
+ser_wvmos_by_arousal_means_only.png

@@ -1,113 +1,77 @@
-#!/usr/bin/env python3
-"""Regenerate ser_wvmos_by_arousal.pdf from the post-leak-fix Test1 results.
-
-Two panels, never one with two y-axes: L_mse and WVMOS are different scales and
-a dual axis lets the reader infer any relationship the placement suggests.
-
-L_mse is recomputed here from each run's metadata.jsonl, so the figure cannot
-drift from the tables. WVMOS is per-class and only exists in the benchmark
-stdout, so it is transcribed with the source log named beside it.
-
-Colours are the dataviz reference categorical palette in fixed slot order, and
-that assignment follows the SYSTEM, not its rank -- adding Uncert below must not
-repaint TargetSEC. Validated --pairs all on a white surface: worst CVD dE 9.2,
-worst normal-vision dE 16.3. Aqua sits at 2.82:1 on white, so every series also
-carries a distinct marker and dash pattern; that doubles as the grayscale-print
-and colourblind fallback.
-
-    python3 plot_arousal_figure.py
-"""
-import json, os
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-LEVELS = np.arange(1, 8)
+x = np.arange(1, 8)
 
-# Ground-truth Test1 WVMOS. Worth drawing: every system here scores at or above
-# it, because WVMOS penalises the recording noise in in-the-wild podcast audio.
-GT_WVMOS = 3.451
-
-SYSTEMS = [
-    # key            label                       colour     marker  dash    metadata.jsonl
-    ("targetsec",   "TargetSEC (ours)",         "#2a78d6", "o", (None, None),
-     "eval_outputs/FULL_targetsec_ep341_test1/metadata.jsonl"),
-    ("hifigan",     "HiFiGAN [10]",             "#eb6834", "s", (4, 2),
-     "eval_outputs/FULL_baseline_ep99_test1/metadata.jsonl"),
-    # To add the cited baselines, fill in per-level values below and append here:
-    #   ("uncert",  "Uncert [12]",   "#1baf7a", "^", (1, 2), None),
-    #   ("emoconv", "EmoConv-Diff [9]", "#4a3aa7", "D", (6, 2, 1, 2), None),
-]
-
-# Per-class WVMOS -- from the benchmark stdout, which is the only place it exists.
-#   targetsec: logs/tsec_full-2476703.out
-#   hifigan  : logs/full_base_eval-2473554.out
-WVMOS = {
-    "targetsec": [3.4639, 3.5123, 3.6275, 3.6622, 3.6007, 3.3742, 3.4180],
-    "hifigan":   [3.4102, 3.3880, 3.3836, 3.3628, 3.2909, 3.1278, 2.9094],
+# Data
+models = ["HiFiGAN", "EmoConv-Diff", "Uncert", "TargetSEC"]
+# HiFiGAN and TargetSEC recomputed on the leak-free split: full MSP-Podcast
+# Test1, 16,903 utterances per level, from each run's metadata.jsonl.
+#   TargetSEC = LDM epoch 341   (eval_outputs/FULL_targetsec_ep341_test1)
+#   HiFiGAN   = our reimplementation, epoch 99, L_SER detached
+#               (eval_outputs/FULL_baseline_ep99_test1)
+# EmoConv-Diff and Uncert are unchanged -- cited from their papers.
+ser_mse_mean = {
+    "HiFiGAN":      [0.2342, 0.1116, 0.0422, 0.0151, 0.0220, 0.0574, 0.1233],
+    "EmoConv-Diff": [0.1644, 0.0905, 0.0469, 0.0129, 0.0253, 0.0638, 0.1102],
+    "Uncert":       [0.1698, 0.0714, 0.0223, 0.0123, 0.0286, 0.0720, 0.1138],
+    "TargetSEC":    [0.1691, 0.0604, 0.0258, 0.0087, 0.0115, 0.0335, 0.1475],
 }
 
-# Per-level values for systems we did not run (cited from their papers).
-LMSE_CITED = {}
+# Same two runs; per-level WVMOS from the benchmark stdout
+#   TargetSEC: logs/tsec_full-2476703.out
+#   HiFiGAN  : logs/full_base_eval-2473554.out
+wvmos_mean = {
+    "HiFiGAN":      [3.41, 3.39, 3.38, 3.36, 3.29, 3.13, 2.91],
+    "EmoConv-Diff": [2.45, 2.27, 2.59, 2.59, 2.79, 2.57, 2.56],
+    "Uncert" :      [3.37, 3.29, 3.32, 3.29, 3.27, 3.20, 3.25],
+    "TargetSEC":    [3.46, 3.51, 3.63, 3.66, 3.60, 3.37, 3.42],
+}
 
+# --- COLOR DEFINITIONS ---
+model_colors = {
+    "HiFiGAN": "#1f77b4",       # Blue
+    "EmoConv-Diff": "#ff7f0e",  # Orange
+    "Uncert": "#2ca02c",        # Green
+    "TargetSEC": "#7030a0"      # Professional Purple
+}
 
-def lmse_per_level(path):
-    """Mean squared arousal error per target level, straight from the manifest."""
-    acc = {c: [] for c in range(1, 8)}
-    with open(os.path.join(ROOT, path)) as f:
-        for line in f:
-            d = json.loads(line)
-            acc[d["class"]].append((d["pred_arousal"] - d["target_arousal"]) ** 2)
-        return [float(np.mean(acc[c])) for c in range(1, 8)]
+M = len(models)
+bar_w = 0.8 / M
+offsets = (np.arange(M) - (M - 1) / 2) * bar_w
 
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.6, 3.2), dpi=220)
 
-plt.rcParams.update({
-    "font.family": "serif", "font.size": 8,
-    "axes.labelsize": 8.5, "axes.titlesize": 8.5,
-    "xtick.labelsize": 8, "ytick.labelsize": 8, "legend.fontsize": 8,
-    "axes.linewidth": 0.6, "xtick.major.width": 0.6, "ytick.major.width": 0.6,
-    "pdf.fonttype": 42, "ps.fonttype": 42,
-})
+# Left: SER MSE
+for i, m in enumerate(models):
+    ax1.bar(x + offsets[i], ser_mse_mean[m], width=bar_w, label=m, color=model_colors[m])
+ax1.set_xticks(x)
+ax1.set_xticklabels([f"{v:.1f}" for v in x])
+ax1.set_xlabel("Arousal")
+ax1.set_ylabel(r"$\mathcal{L}_{mse}$")
+ax1.set_ylim(0.0, 0.25)
+ax1.grid(True, axis="y", alpha=0.25)
 
-fig, (axL, axR) = plt.subplots(1, 2, figsize=(7.0, 2.45))
+# Right: WVMOS
+for i, m in enumerate(models):
+    ax2.bar(x + offsets[i], wvmos_mean[m], width=bar_w, label=m, color=model_colors[m])
+ax2.set_xticks(x)
+ax2.set_xticklabels([f"{v:.1f}" for v in x])
+ax2.set_xlabel("Arousal")
+ax2.set_ylabel("WVMOS")
+# WVMOS spans 1-5, so 1.0 is the scale's true floor and the bars must start
+# there -- cutting the baseline to 2.0 would stretch a 3.66-vs-2.91 gap into a
+# visual ~1.8x. All the dead space is at the TOP (max value 3.66), so trimming
+# the ceiling buys ~25% more resolution and distorts nothing.
+ax2.set_ylim(1.0, 4.0)
+ax2.grid(True, axis="y", alpha=0.25)
 
-INK, MUTED = "#0b0b0b", "#52514e"
-for ax in (axL, axR):
-    ax.spines[["top", "right"]].set_visible(False)
-    ax.spines[["left", "bottom"]].set_color(MUTED)
-    ax.tick_params(colors=MUTED, length=3)
-    ax.grid(axis="y", color="#e6e5e2", linewidth=0.6, zorder=0)
-    ax.set_axisbelow(True)
-    ax.set_xticks(LEVELS)
-    ax.set_xlabel("Target arousal level")
+# Legend
+handles, labels = ax1.get_legend_handles_labels()
+fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.0), 
+           ncol=4, frameon=True, fontsize=8)
 
-handles = []
-for key, label, colour, marker, dash, meta in SYSTEMS:
-    y = lmse_per_level(meta) if meta else LMSE_CITED[key]
-    ln, = axL.plot(LEVELS, y, color=colour, marker=marker, markersize=4.2,
-                   linewidth=1.6, dashes=dash, zorder=3,
-                   markeredgecolor="white", markeredgewidth=0.6, label=label)
-    handles.append(ln)
-    axR.plot(LEVELS, WVMOS[key], color=colour, marker=marker, markersize=4.2,
-             linewidth=1.6, dashes=dash, zorder=3,
-             markeredgecolor="white", markeredgewidth=0.6)
-
-axL.set_ylabel(r"SER error $\mathcal{L}_{mse}$ $\downarrow$")
-axL.set_ylim(0, None)
-
-axR.set_ylabel(r"WVMOS $\uparrow$")
-gt = axR.axhline(GT_WVMOS, color=MUTED, linewidth=0.8, dashes=(2, 2), zorder=1,
-                 label="ground-truth Test1")
-handles.append(gt)
-
-fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 1.015),
-           ncol=len(handles), frameon=False, handlelength=2.6,
-           columnspacing=1.8, labelcolor=INK)
-
-fig.tight_layout(rect=(0, 0, 1, 0.93))
-for ext in ("pdf", "png"):
-    p = os.path.join(ROOT, f"ser_wvmos_by_arousal.{ext}")
-    fig.savefig(p, dpi=220, bbox_inches="tight")
-    print(f"wrote {p}")
+plt.tight_layout(rect=[0, 0, 1, 0.90])
+plt.savefig("ser_wvmos_by_arousal.pdf")
+plt.savefig("ser_wvmos_by_arousal_means_only.png", dpi=300)
+plt.show()
