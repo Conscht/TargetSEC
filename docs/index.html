@@ -76,6 +76,11 @@ section{padding-block:3.2rem;border-top:1px solid var(--line)}
 header{padding-block:2.8rem 2.6rem;text-align:center}
 header p{margin-inline:auto}
 header .links{justify-content:center}
+.links[data-style="badges"] .asbuttons{display:none}
+.links[data-style="buttons"] .asbadges{display:none}
+.links .asbuttons,.links .asbadges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.links .asbadges a{padding:0;border:0;background:none}
+.links .asbadges img{display:block;height:28px;width:auto;border-radius:4px}
 .byline{font-size:.95rem;color:var(--fg-2);margin-block:1.7rem .3rem}
 .affil{font-size:.88rem;color:var(--fg-3)}
 .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:1.7rem}
@@ -197,11 +202,26 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
   the decoder, rather than the spectrogram itself.</p>
   <p class="byline">Constantin Alexander Auga</p>
   <p class="affil">Hasso Plattner Institute / University of Potsdam</p>
-  <nav class="links">
-    <a class="primary" href="#listen">Listen</a>
-    <a href="https://arxiv.org/abs/2606.07293">Paper</a>
-    <a href="#results">Results</a>
-    <a href="https://github.com/Conscht/TargetSEC">Code</a>
+  <!-- Switch the whole row by changing data-style to "buttons" or "badges". -->
+  <nav class="links" data-style="badges">
+    <span class="asbuttons">
+      <a class="primary" href="#listen">Listen</a>
+      <a href="https://arxiv.org/abs/2606.07293">Paper</a>
+      <a href="#results">Results</a>
+      <a href="https://github.com/Conscht/TargetSEC">Code</a>
+    </span>
+    <span class="asbadges">
+      <a href="#listen"><img alt="Demo: listen"
+        src="https://img.shields.io/badge/demo-listen-6B3FA0?style=for-the-badge"></a>
+      <a href="https://arxiv.org/abs/2606.07293"><img alt="Paper: arXiv 2606.07293"
+        src="https://img.shields.io/badge/paper-arXiv%3A2606.07293-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white"></a>
+      <a href="https://github.com/Conscht/TargetSEC"><img alt="Code on GitHub"
+        src="https://img.shields.io/badge/code-github-24292F?style=for-the-badge&logo=github&logoColor=white"></a>
+      <a href="https://ecs.utdallas.edu/research/researchlabs/msp-lab/MSP-Podcast.html"><img alt="Dataset: MSP-Podcast v1.10"
+        src="https://img.shields.io/badge/dataset-MSP--Podcast%20v1.10-4C4858?style=for-the-badge"></a>
+      <a href="https://github.com/Conscht/TargetSEC/blob/master/LICENSE"><img alt="Licence: MIT"
+        src="https://img.shields.io/badge/licence-MIT-2E7D54?style=for-the-badge"></a>
+    </span>
   </nav>
 </header>
 
