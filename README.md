@@ -181,7 +181,7 @@ University of Texas at Dallas. The official partitions are used as published:
 | Partition | Utterances | Role |
 |---|---|---|
 | Train | 63,076 | gradients |
-| Development | 10,999 (8,376 with cached mels) | validation and checkpoint selection |
+| Development | 10,999 | validation and checkpoint selection |
 | Test1 | 16,903 | evaluation only |
 
 Preprocessing produces HuBERT km100 tokens and WavLM speaker embeddings under

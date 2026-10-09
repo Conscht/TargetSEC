@@ -88,12 +88,11 @@ figcaption{font-size:.87rem;color:var(--fg-3);margin-top:.8rem;max-width:66ch}
       padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
 .origrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
 .gridscroll{overflow-x:auto;margin-inline:-4px;padding-inline:4px}
-table.grid{border-collapse:separate;border-spacing:5px;min-width:700px;width:100%;
-  table-layout:fixed}
-table.grid th{font:500 .74rem/1 var(--mono);color:var(--fg-3);font-weight:500;padding-bottom:3px}
-table.grid th.rowlab,table.grid td.rowlab{width:150px}
-table.grid th.rowlab{text-align:right;padding-right:10px;white-space:nowrap;
-  font:500 .88rem/1.3 var(--body);color:var(--fg-2)}
+.lgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-width:430px}
+.lgrid .num{font:500 .74rem/1 var(--mono);color:var(--fg-3);text-align:center;padding-bottom:2px}
+.lgrid .lname{grid-column:1/-1;font:500 .88rem/1.3 var(--body);color:var(--fg-2);
+  margin-top:10px;margin-bottom:1px}
+.lgrid .rampcell{grid-column:1/-1;margin-top:6px}
 .play{display:block;width:100%;min-width:52px;padding:12px 6px;border-radius:7px;
   border:1px solid transparent;cursor:pointer;font:500 .8rem/1 var(--mono);
   transition:transform .08s ease}
@@ -206,7 +205,7 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
       <span class="eyebrow" id="origmeta" style="color:var(--fg-3)"></span>
     </div>
     <div class="gridscroll">
-      <table class="grid" id="grid"></table>
+      <div class="lgrid" id="grid"></div>
     </div>
 
   </div>
@@ -351,7 +350,7 @@ const SYSTEMS=[["targetsec","TargetSEC"],["hifigan","HiFi-GAN baseline"]];
 // the header cells rather than assuming, and the alignment holds at any size.
 function drawRamp(){
   const cell = grid.querySelector('.rampcell');
-  const heads = [...grid.querySelectorAll('thead th:not(.rowlab)')];
+  const heads = [...grid.querySelectorAll('.num')];
   if(!cell || heads.length !== 7) return;
   const base = cell.getBoundingClientRect();
   const W = Math.round(base.width); if(W < 40) return;
@@ -421,19 +420,17 @@ function render(){
   origMeta.textContent=`annotated arousal ${cur.ar} of 7`;
   origBtn.onclick=()=>play(`audio/${cur.tag}__ORIGINAL_arousal${cur.ar}.ogg`,origBtn);
 
-  let html='<thead><tr><th class="rowlab"></th>';
-  for(let c=1;c<=7;c++) html+=`<th>${c}</th>`;
-  html+='<th class="rowlab"></th></tr></thead><tbody>';
+  let html='';
+  for(let c=1;c<=7;c++) html+=`<span class="num">${c}</span>`;
   SYSTEMS.forEach(([key,label])=>{
-    html+=`<tr><th class="rowlab" scope="row">${label}</th>`;
+    html+=`<div class="lname">${label}</div>`;
     for(let c=1;c<=7;c++)
-      html+=`<td><button type="button" class="play lv${c}" data-src="audio/${cur.tag}__target${c}__${key}.ogg"
-              aria-label="${label}, arousal level ${c}">&#9654;</button></td>`;
-    html+='<td class="rowlab"></td></tr>';
+      html+=`<button type="button" class="play lv${c}" data-src="audio/${cur.tag}__target${c}__${key}.ogg"
+              aria-label="${label}, arousal level ${c}">&#9654;</button>`;
   });
-  grid.innerHTML=html+'<tr><th class="rowlab"></th>'+
-    '<td colspan="7" class="rampcell" style="padding-top:12px"></td>'+
-    '<td class="rowlab"></td></tr></tbody>';
+  html+='<div class="rampcell"></div>';
+  grid.innerHTML=html;
+  grid.querySelectorAll('button.play').forEach(b=>b.onclick=()=>play(b.dataset.src,b));
   drawRamp();
   grid.querySelectorAll('button.play').forEach(b=>b.onclick=()=>play(b.dataset.src,b));
 }
