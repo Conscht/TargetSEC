@@ -22,17 +22,27 @@ from Ablation.style_emo_mlp_module import StyleEmoLightningModule
 # USER CONFIG
 # -----------------------------
 # Set this to match the checkpoint you are loading!
-USE_SPEAKER_COND = False  # True = Emo+Spk MLP, False = Emo-Only MLP
+USE_SPEAKER_COND = None  # set from CLI below
 
 # Paths
 emotion_embedding_dir = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
-checkpoint_synth = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_synthesizer/synthesizer_training_speakr-12-14_15-51-55-epoch=122-val_loss=17.55.ckpt"
+import argparse as _ap
+_p = _ap.ArgumentParser()
+_p.add_argument("--synth", required=True)
+_p.add_argument("--mlp", required=True)
+_p.add_argument("--save_root", default=None)
+_p.add_argument("--sample_n", type=int, default=0)
+_p.add_argument("--sample_seed", type=int, default=0)
+_p.add_argument("--use_speaker", type=int, choices=[0,1], required=True)
+_a, _ = _p.parse_known_args()
+checkpoint_synth = _a.synth
 
 # 🔹 PATH TO YOUR NEW MLP CHECKPOINT
 # (Paste the path to your .ckpt file from 'checkpoints_ablation_mlp' here)
-checkpoint_mlp = r"/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/checkpoints_ablation_mlp/MLP_Baseline_noSpk_01-22_16-11-epoch=299-val_loss=0.564.ckpt"
+checkpoint_mlp = _a.mlp
+USE_SPEAKER_COND = bool(_a.use_speaker)
 
-SAVE_ROOT = f"eval_outputs/test1_MLP_ABLAT_spk{USE_SPEAKER_COND}"   # Auto-rename output folder
+SAVE_ROOT = _a.save_root or f"eval_outputs/test1_MLP_ABLAT_spk{USE_SPEAKER_COND}"
 SAVE_WAV = True
 SAVE_AUDIO_LIMIT = None  # Set to 100 for a quick test
 
@@ -120,13 +130,18 @@ if __name__ == "__main__":
 
     # 2. Synthesizer (Decoder)
     gen = Generator(config_synth)
-    discrim = MultiPeriodDiscriminator()
+    # Inference needs only decoder / dict. Stage-2 checkpoints carry a
+    # CombinedDiscriminator (discriminator.mpd.* / discriminator.msd.*), which
+    # does not match MultiPeriodDiscriminator; discriminator=None + strict=False
+    # keeps this benchmark working across discriminator changes instead of
+    # dying on a 300-key state_dict mismatch. Same fix as benchmark_finetune.py.
     synthesizer = SynthesizerLightningModule.load_from_checkpoint(
         checkpoint_synth,
         style_encoder=pretrained_style_encoder,
         decoder=gen,
-        discriminator=discrim,
-        config=config_synth
+        discriminator=None,
+        config=config_synth,
+        strict=False,
     ).to(device).eval()
     
     decoder = synthesizer.decoder.to(device).eval()

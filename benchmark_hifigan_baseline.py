@@ -41,6 +41,9 @@ parser.add_argument("--n_utts", type=int, default=0,
                          "NOTE: the loader is sorted by filename, so a truncated run "
                          "is NOT a random sample -- it is the earliest podcasts only. "
                          "Use for smoke tests, never for reported numbers.")
+parser.add_argument("--split", choices=["test1", "dev"], default="test1",
+                    help="'dev' selects checkpoints on Development so that "
+                         "reporting on Test1 is not model selection on the test set.")
 parser.add_argument("--sample_n", type=int, default=0,
                     help="Evaluate a RANDOM sample of N utterances (0 = all). Unlike "
                          "--n_utts this is unbiased, so it is safe for reported numbers. "
@@ -129,7 +132,8 @@ if __name__ == "__main__":
     mse_sum, mae_sum, n_sum = defaultdict(float), defaultdict(float), defaultdict(int)
     mse_global, mae_global, n_global = 0.0, 0.0, 0
 
-    test_loader = test_create_data_loader(batch_size=1)
+    test_loader = test_create_data_loader(batch_size=1, split=args.split)
+    print(f'Evaluating on split: {args.split}')
 
     # Random subset. The loader is sorted by filename and unshuffled, so
     # batch_idx is the dataset index -- picking indices up front gives an

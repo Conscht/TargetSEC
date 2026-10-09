@@ -5,7 +5,7 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
-#SBATCH --time=0-04:00:00
+#SBATCH --time=0-08:00:00
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --error=logs/%x-%j.err
 #SBATCH -C "GPU_SKU:A100"
@@ -17,4 +17,4 @@ conda activate emoldm
 
 pip install -q openai-whisper jiwer
 
-srun python wer_eval.py
+srun python -u wer_eval.py

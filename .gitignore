@@ -28,3 +28,22 @@ env/
 .env
 StyleSpeech/
 /sc/home/constantin.auga/New folder/Code/EmoConv-LDM/venv/
+# ---- scratch & local working files ----
+.scratch/
+*.bak
+_*.sh
+_*.py
+_*.txt
+bash.md
+*.tgz
+
+# ---- listening study: materials are large and the participant data is
+# ---- personal, so neither belongs in a public repo
+listening_study/
+
+# ---- the demo audio shipped with the GitHub Pages site is OGG; keep the
+# ---- uncompressed sources out
+docs/audio/*.wav
+train_synthesizer.log
+wav2vec2_checkpoints/
+config/3ed.json

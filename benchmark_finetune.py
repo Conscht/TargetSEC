@@ -23,15 +23,17 @@ from src.decoder.decoder_modules import broadcast_embeddings
 from src.emotion.emotion_encoder import process_func
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-CHECKPOINT_SYNTH = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "checkpoints_synthesizer_finetune/"
-    "synthesizer_finetune-06-13_18-22-18-epoch=48-val_loss=16.24.ckpt"
-)
-CHECKPOINT_LDM = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "checkpoints_ldm_finetune/ldm_finetune-06-14_13-02-09-epoch=596-val_loss=0.4642.ckpt"
-)
+import argparse as _ap
+_p = _ap.ArgumentParser()
+_p.add_argument("--synth", required=True, help="stage-2 synthesizer checkpoint")
+_p.add_argument("--ldm", required=True, help="stage-4 LDM checkpoint")
+_p.add_argument("--save_root", default=None)
+_p.add_argument("--split", choices=["test1","dev"], default="test1")
+_p.add_argument("--sample_n", type=int, default=0)
+_p.add_argument("--sample_seed", type=int, default=0)
+_a, _ = _p.parse_known_args()
+CHECKPOINT_SYNTH = _a.synth
+CHECKPOINT_LDM = _a.ldm
 PRETRAINED_STYLE_PATH = (
     "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/"
     "Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
@@ -40,7 +42,7 @@ EMOTION_EMBEDDING_DIR = (
     "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/"
     "Audio/MSP-Podcast-1.10/avgclass_emo_embeds"
 )
-SAVE_ROOT = "eval_outputs/ldm_finetune_epoch596"
+SAVE_ROOT = _a.save_root or "eval_outputs/ldm_finetune_epoch596"
 SAVE_AUDIO_LIMIT = None  # None = all utterances
 
 # ── Configs ────────────────────────────────────────────────────────────────
@@ -116,12 +118,17 @@ if __name__ == "__main__":
     discrim = MultiPeriodDiscriminator()
 
     print(f"Loading synthesizer from: {CHECKPOINT_SYNTH}")
+    # Inference needs only style_encoder / decoder / dict. discriminator=None +
+    # strict=False keeps this working across discriminator changes -- the stage-2
+    # checkpoints carry CombinedDiscriminator (mpd.*/msd.*) keys, which do not
+    # match MultiPeriodDiscriminator and would otherwise abort the load.
     synthesizer = SynthesizerLightningModule.load_from_checkpoint(
         CHECKPOINT_SYNTH,
         style_encoder=style_encoder,
         decoder=gen,
-        discriminator=discrim,
+        discriminator=None,
         config=config_synth,
+        strict=False,
     ).to(device).eval()
 
     print(f"Loading LDM from: {CHECKPOINT_LDM}")
@@ -144,9 +151,17 @@ if __name__ == "__main__":
     mse_global, mae_global, n_global = 0.0, 0.0, 0
 
     # ── Eval loop ────────────────────────────────────────────────────────────
-    test_loader = test_create_data_loader(batch_size=1)
+    test_loader = test_create_data_loader(batch_size=1, split=_a.split)
+    print(f"split: {_a.split}", flush=True)
+    _keep = None
+    if _a.sample_n:
+        import random as _r
+        _keep = set(_r.Random(_a.sample_seed).sample(range(len(test_loader)), min(_a.sample_n, len(test_loader))))
+        print(f"Random sample: {len(_keep)} of {len(test_loader)} (seed {_a.sample_seed})", flush=True)
 
     for batch_idx, batch in enumerate(test_loader):
+        if _keep is not None and batch_idx not in _keep:
+            continue
         if SAVE_AUDIO_LIMIT is not None and batch_idx >= SAVE_AUDIO_LIMIT:
             break
 

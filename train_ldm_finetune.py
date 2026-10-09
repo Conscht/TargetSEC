@@ -31,15 +31,22 @@ from src.diffusion_module_fixed import DiffusionLightningModule
 
 sys.path.append(os.getcwd())
 
-FINETUNE_CHECKPOINT = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "checkpoints_synthesizer_finetune/"
-    "synthesizer_finetune-06-13_18-22-18-epoch=48-val_loss=16.24.ckpt"
-)
-STYLE_STATS_PATH = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "style_stats_finetune.pt"
-)
+import argparse as _ap
+_p = _ap.ArgumentParser()
+_p.add_argument("--finetune_checkpoint", required=True,
+                help="Stage-2 checkpoint providing the style encoder. Was hardcoded "
+                     "to a June (Test1-trained) model.")
+_p.add_argument("--use_speaker", type=int, choices=[0,1], default=1,
+                help="0 = emotion-only ablation (no speaker conditioning).")
+_p.add_argument("--max_epochs", type=int, default=400,
+                help="Old run: 597 epochs in 16h22m (~1.65 min/epoch), val_loss "
+                     "0.4645->0.4642 over the last 10 epochs. 400 is ~11h and "
+                     "well past the plateau; shorter walltime also backfills better.")
+_p.add_argument("--style_stats", required=True,
+                help="Stats produced by compute_style_stats_finetune.py for THAT encoder.")
+_a, _ = _p.parse_known_args()
+FINETUNE_CHECKPOINT = _a.finetune_checkpoint
+STYLE_STATS_PATH = _a.style_stats
 
 
 def load_finetuned_style_encoder(ckpt_path):
@@ -58,7 +65,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--resume", type=str, default=None,
                         help="LDM checkpoint to resume from")
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()   # module-level parser owns the rest
 
     if not os.path.exists(STYLE_STATS_PATH):
         raise FileNotFoundError(
@@ -93,7 +100,7 @@ def main():
     model = DiffusionLightningModule(
         style_encoder=style_encoder,
         config=config,
-        use_speaker_cond=True,
+        use_speaker_cond=bool(_a.use_speaker),
         style_stats_path=STYLE_STATS_PATH,
     )
 
@@ -128,7 +135,7 @@ def main():
 
     trainer = Trainer(
         logger=logger,
-        max_epochs=600,
+        max_epochs=_a.max_epochs,
         accelerator="gpu",
         devices=num_gpus,
         precision=32,

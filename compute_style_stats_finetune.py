@@ -25,12 +25,16 @@ META_TRAIN = (
     "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/"
     "Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/train.txt"
 )
-FINETUNE_CHECKPOINT = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "checkpoints_synthesizer_finetune/"
-    "synthesizer_finetune-06-13_18-22-18-epoch=48-val_loss=16.24.ckpt"
-)
-OUT_PATH = "style_stats_finetune.pt"
+import argparse as _ap
+_p = _ap.ArgumentParser()
+_p.add_argument("--finetune_checkpoint", required=True,
+                help="Stage-2 checkpoint whose style encoder defines the LDM's "
+                     "target latents. Was hardcoded to a June (Test1-trained) "
+                     "checkpoint -- passing it explicitly stops the leak walking back in.")
+_p.add_argument("--out", default=None)
+_a, _ = _p.parse_known_args()
+FINETUNE_CHECKPOINT = _a.finetune_checkpoint
+OUT_PATH = _a.out or "style_stats_finetune.pt"
 
 BATCH_SIZE  = 16
 NUM_WORKERS = 7

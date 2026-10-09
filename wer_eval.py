@@ -1,15 +1,23 @@
 """
-WER evaluation for intelligibility comparison.
+WER evaluation for intelligibility.
 
 Runs Whisper-medium on:
   - Ground truth audio (as ASR reference)
   - TargetSEC class_4 WAVs (hypothesis)
-  - HiFiGAN baseline class_4 WAVs (hypothesis)
-
-Reports mean WER ± std per system.
 
 class_4 is used as a representative mid-arousal condition — WER should be
 class-invariant since emotion conversion preserves linguistic content.
+
+Audio is peak-normalized before transcription: Whisper does not normalize
+loudness internally (unlike WVMOS, which z-score normalizes via
+Wav2Vec2Processor), so quiet low-arousal audio could otherwise be
+disadvantaged relative to louder high-arousal audio.
+
+Reports corpus-level WER (aggregate edit distance / aggregate reference
+word count via jiwer.process_words) — the standard ASR convention — plus
+mean/median of per-utterance ratios for reference. Corpus-level WER is
+far less sensitive to outlier utterances than the mean of per-utterance
+ratios.
 
 Requires: pip install openai-whisper jiwer
 """
@@ -31,18 +39,14 @@ GT_AUDIO_DIR = (
 )
 TARGETSEC_WAV_DIR = (
     "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "eval_outputs/finetune_epoch48_guidance4_gs07/wav/class_4"
-)
-HIFIGAN_WAV_DIR = (
-    "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-    "eval_outputs/hifigan_baseline_epoch116/wav/class_4"
+    "eval_outputs/ldm_finetune_epoch596/wav/class_4"
 )
 
 N_SAMPLES = None   # full test set (16,903 utterances)
 WHISPER_MODEL = "medium"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+PEAK_TARGET = 0.95  # normalize peak amplitude to this before transcription
 
-# ── Normalisation for fair WER comparison ─────────────────────────────────
 TRANSFORM = jiwer.Compose([
     jiwer.ToLowerCase(),
     jiwer.RemovePunctuation(),
@@ -59,7 +63,11 @@ def load_audio_as_np(path: str, target_sr: int = 16000) -> np.ndarray:
         wav = wav.mean(dim=0, keepdim=True)
     if sr != target_sr:
         wav = torchaudio.transforms.Resample(sr, target_sr)(wav)
-    return wav.squeeze(0).numpy()
+    audio = wav.squeeze(0).numpy()
+    peak = np.abs(audio).max()
+    if peak > 1e-8:
+        audio = audio / peak * PEAK_TARGET
+    return audio
 
 
 def read_manifest(path: str):
@@ -78,17 +86,18 @@ def main():
 
     entries = read_manifest(TEST1_MANIFEST)
     total = len(entries) if N_SAMPLES is None else min(N_SAMPLES, len(entries))
-    print(f"Evaluating {total} utterances...")
+    print(f"Evaluating {total} utterances (TargetSEC only, peak-normalized)...")
 
-    gt_wers, ts_wers, hf_wers = [], [], []
-    skipped = {"targetsec": 0, "hifigan": 0}
+    refs, hyps = [], []
+    per_utt_wers = []
+    skipped = 0
 
     for i, basename in enumerate(entries[:total]):
         gt_path = os.path.join(GT_AUDIO_DIR, basename)
         ts_path = os.path.join(TARGETSEC_WAV_DIR, f"utt_{i:06d}.wav")
-        hf_path = os.path.join(HIFIGAN_WAV_DIR, f"utt_{i:06d}.wav")
 
         if not os.path.exists(gt_path):
+            skipped += 1
             continue
 
         gt_audio = load_audio_as_np(gt_path)
@@ -99,43 +108,29 @@ def main():
         if os.path.exists(ts_path):
             ts_audio = load_audio_as_np(ts_path)
             hyp = model.transcribe(ts_audio, language="en")["text"].strip()
+            refs.append(ref_text)
+            hyps.append(hyp)
             try:
-                wer = jiwer.wer(ref_text, hyp, truth_transform=TRANSFORM,
+                wer = jiwer.wer(ref_text, hyp, reference_transform=TRANSFORM,
                                 hypothesis_transform=TRANSFORM)
-                ts_wers.append(wer)
+                per_utt_wers.append(wer)
             except Exception:
                 pass
         else:
-            skipped["targetsec"] += 1
+            skipped += 1
 
-        if os.path.exists(hf_path):
-            hf_audio = load_audio_as_np(hf_path)
-            hyp = model.transcribe(hf_audio, language="en")["text"].strip()
-            try:
-                wer = jiwer.wer(ref_text, hyp, truth_transform=TRANSFORM,
+        if (i + 1) % 500 == 0:
+            print(f"  [{i+1}/{total}] n={len(refs)} collected, {skipped} skipped")
+
+    print("\n=== WER Results (Whisper-medium, class_4, full test set, peak-normalized) ===")
+    if refs:
+        corpus_wer = jiwer.wer(refs, hyps, reference_transform=TRANSFORM,
                                 hypothesis_transform=TRANSFORM)
-                hf_wers.append(wer)
-            except Exception:
-                pass
-        else:
-            skipped["hifigan"] += 1
-
-        if (i + 1) % 100 == 0:
-            print(f"  [{i+1}/{total}] TargetSEC n={len(ts_wers)}, HiFiGAN n={len(hf_wers)}")
-
-    print("\n=== WER Results (Whisper-medium, class_4) ===")
-    if ts_wers:
-        print(f"  TargetSEC : {np.mean(ts_wers)*100:.1f}% ± {np.std(ts_wers)*100:.1f}%  (N={len(ts_wers)})")
-    if hf_wers:
-        print(f"  HiFiGAN   : {np.mean(hf_wers)*100:.1f}% ± {np.std(hf_wers)*100:.1f}%  (N={len(hf_wers)})")
-    if skipped["targetsec"]:
-        print(f"  [skipped {skipped['targetsec']} TargetSEC WAVs not found]")
-    if skipped["hifigan"]:
-        print(f"  [skipped {skipped['hifigan']} HiFiGAN WAVs not found]")
-
-    # GT self-WER (transcription consistency, should be ~0 but shows Whisper noise floor)
-    print("\nNote: GT WER reported above is Whisper transcription of GT used as its own reference.")
-    print("Expected: TargetSEC ≈ HiFiGAN WER if intelligibility is preserved.")
+        print(f"  Corpus-level WER : {corpus_wer*100:.1f}%  (N={len(refs)} utterances, standard ASR convention)")
+        print(f"  Mean per-utt WER : {np.mean(per_utt_wers)*100:.1f}% ± {np.std(per_utt_wers)*100:.1f}%")
+        print(f"  Median per-utt   : {np.median(per_utt_wers)*100:.1f}%")
+    if skipped:
+        print(f"  [skipped {skipped} utterances — GT or TargetSEC WAV not found]")
 
 
 if __name__ == "__main__":

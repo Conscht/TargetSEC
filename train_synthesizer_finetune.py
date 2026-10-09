@@ -88,6 +88,11 @@ def main():
                              "newest in checkpoints_synthesizer/.")
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--limit_val_batches", type=int, default=1000)
+    parser.add_argument("--max_epochs", type=int, default=20,
+                        help="Stage 2 is an LR-drop + style-encoder unfreeze; the old "
+                             "run peaked at epoch 48 but was within 0.3 of it by 22, so "
+                             "~20 is the cost-effective budget on the Train split "
+                             "(~42 min/epoch).")
     parser.add_argument("--ser_loss", choices=["differentiable", "detached"],
                         default="detached",
                         help="Stage 2 defaults to 'detached': the style encoder "
@@ -170,7 +175,7 @@ def main():
 
     trainer = Trainer(
         logger=logger,
-        max_epochs=150,   # enough headroom for both fresh and resumed runs
+        max_epochs=args.max_epochs,
         min_epochs=5,
         accelerator="gpu",
         devices=num_gpus,

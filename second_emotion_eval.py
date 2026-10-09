@@ -15,6 +15,7 @@ Batches all 7 class WAVs per utterance together for efficient GPU inference.
 """
 import ast
 import os
+import types
 import numpy as np
 import torch
 import torchaudio
@@ -26,16 +27,18 @@ TEST1_MANIFEST = (
     "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/"
     "Audio/MSP-Podcast-1.10/hubert-km100/parsed_with_spkrEmbeds/test1.txt"
 )
-SYSTEMS = {
-    "TargetSEC": (
-        "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-        "eval_outputs/finetune_epoch48_guidance4_gs07/wav"
-    ),
-    "HiFiGAN": (
-        "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/"
-        "eval_outputs/hifigan_baseline_epoch116/wav"
-    ),
-}
+import argparse as _ap
+_p = _ap.ArgumentParser()
+_p.add_argument("--wav_root", action="append", default=None,
+                help="Repeatable: <root>/class_{1..7}. Defaults to TargetSEC.")
+_p.add_argument("--name", action="append", default=None, help="Label per --wav_root")
+_a, _ = _p.parse_known_args()
+if _a.wav_root:
+    _names = _a.name or [f"sys{i}" for i in range(len(_a.wav_root))]
+    SYSTEMS = dict(zip(_names, _a.wav_root))
+else:
+    SYSTEMS = {"TargetSEC": ("/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/"
+                             "Code/EmoConv-LDM/eval_outputs/ldm_finetune_epoch596/wav")}
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 TARGET_SR = 16000
@@ -50,12 +53,41 @@ def load_wav(path: str) -> torch.Tensor:
     return wav.squeeze(0)  # (T,)
 
 
-def pad_batch(wavs: list) -> torch.Tensor:
-    """Pad list of 1-D tensors to same length → (B, T)."""
-    max_len = max(w.size(0) for w in wavs)
-    return torch.stack([
+def pad_batch(wavs: list) -> tuple:
+    """Pad 1-D tensors → (B, T) and return relative lengths."""
+    lengths = [w.size(0) for w in wavs]
+    max_len = max(lengths)
+    padded = torch.stack([
         torch.nn.functional.pad(w, (0, max_len - w.size(0))) for w in wavs
     ])
+    wav_lens = torch.tensor([l / max_len for l in lengths], dtype=torch.float32)
+    return padded, wav_lens
+
+
+def _patched_encode_batch(self, wavs, wav_lens=None, normalize=False):
+    """encode_batch patched for wav2vec2-based models (no compute_features module).
+
+    Mods available: wav2vec2, avg_pool, output_mlp — no compute_features or classifier.
+    """
+    if len(wavs.shape) == 1:
+        wavs = wavs.unsqueeze(0)
+    if wav_lens is None:
+        wav_lens = torch.ones(wavs.shape[0], device=wavs.device)
+    wavs = wavs.to(self.device)
+    wav_lens = wav_lens.to(self.device)
+    feats = self.mods.wav2vec2(wavs, wav_lens)
+    emb = self.mods.avg_pool(feats, wav_lens)
+    return emb
+
+
+def _patched_classify_batch(self, wavs, wav_lens=None):
+    """classify_batch patched: uses output_mlp instead of non-existent mods.classifier."""
+    emb = self.encode_batch(wavs, wav_lens)
+    out_logits = self.mods.output_mlp(emb).squeeze(1)  # (B, n_classes)
+    out_prob = torch.nn.functional.log_softmax(out_logits, dim=-1)
+    score, index = torch.max(out_prob, dim=-1)
+    text_lab = self.hparams.label_encoder.decode_torch(index)
+    return out_prob, score, index, text_lab
 
 
 def build_label_map(classifier) -> dict:
@@ -86,9 +118,12 @@ def eval_system(classifier, label_map, wav_dir, n_entries):
         if not wavs:
             continue
 
-        batch = pad_batch(wavs).to(DEVICE)   # (B, T) where B ≤ 7
+        batch, wav_lens = pad_batch(wavs)
+        batch = batch.to(DEVICE)
+        wav_lens = wav_lens.to(DEVICE)
+
         with torch.no_grad():
-            out_prob, _, _, _ = classifier.classify_batch(batch)
+            out_prob, _, _, _ = classifier.classify_batch(batch, wav_lens)
 
         probs = out_prob.exp()  # log-softmax → softmax, shape (B, n_classes)
         for j, c in enumerate(valid_classes):
@@ -111,6 +146,11 @@ def main():
         run_opts={"device": str(DEVICE)},
     )
     classifier.eval()
+
+    # Patch for wav2vec2 model: mods has wav2vec2/avg_pool/output_mlp, not compute_features/classifier
+    print(f"Available mods: {list(classifier.mods.keys())}")
+    classifier.encode_batch = types.MethodType(_patched_encode_batch, classifier)
+    classifier.classify_batch = types.MethodType(_patched_classify_batch, classifier)
 
     label_map = build_label_map(classifier)
     print(f"IEMOCAP label map: {label_map}")

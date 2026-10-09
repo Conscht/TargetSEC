@@ -13,14 +13,28 @@ from StyleSpeech.models.StyleSpeech import MelStyleEncoder
 from config.stylespeech_model_config import style_config
 from Ablation.style_emo_mlp_module import StyleEmoLightningModule  # Your new MLP class
 
+import argparse as _ap
+_p = _ap.ArgumentParser()
+_p.add_argument("--style_stats", required=True,
+                help="Stats for the CURRENT stage-2 style encoder. Was hardcoded to "
+                     "style_stats_new.pt, which belongs to the December (Test1-trained) "
+                     "encoder and would silently reproduce the old ablation numbers.")
+_p.add_argument("--use_speaker", type=int, choices=[0,1], default=None)
+_p.add_argument("--max_epochs", type=int, default=300)
+_p.add_argument("--synth_checkpoint", required=True,
+                help="Stage-2 checkpoint whose style encoder produced --style_stats. "
+                     "Must match, or the MLP regresses toward the wrong latent space.")
+_a, _ = _p.parse_known_args()
+
+
 # =========================================================
 # Change this to False for "Emo-Only MLP", True for "Emo+Spk MLP"
 # =========================================================
-USE_SPEAKER_COND = True 
+USE_SPEAKER_COND = bool(_a.use_speaker) if _a.use_speaker is not None else True 
 
 # Paths (Adjust if needed)
 STYLE_ENCODER_PATH = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Audio/MSP-Podcast-1.10/pre-trained_models/pre-trained_style"
-STYLE_STATS_PATH   = "/sc/projects/sci-demelo/mpws2025gd1/constantin/New folder/Code/EmoConv-LDM/style_stats_new.pt"
+STYLE_STATS_PATH = _a.style_stats
 
 def main():
     seed = 1234
@@ -33,8 +47,13 @@ def main():
 
     # Load Frozen Teacher
     pretrained_style_encoder = MelStyleEncoder(style_config)
-    pretrained_style_encoder.load_state_dict(torch.load(STYLE_ENCODER_PATH))
+    _ck = torch.load(_a.synth_checkpoint, map_location="cpu")["state_dict"]
+    _se = {k[len("style_encoder."):]: v for k, v in _ck.items()
+           if k.startswith("style_encoder.")}
+    assert _se, f"no style_encoder.* keys in {_a.synth_checkpoint}"
+    pretrained_style_encoder.load_state_dict(_se, strict=True)
     pretrained_style_encoder.eval()
+    print(f"Style encoder from: {_a.synth_checkpoint} ({len(_se)} tensors)")
 
     # Config
     config = {
@@ -78,7 +97,7 @@ def main():
 
     trainer = Trainer(
         logger=logger,
-        max_epochs=300, 
+        max_epochs=_a.max_epochs, 
         accelerator="gpu",
         devices=num_gpus,
         precision=32,

@@ -387,7 +387,7 @@ def create_dataloaders_with_emotion(batch_size,
     return _build_loaders(train_dataset, val_dataset, batch_size)
 
 
-def test_create_data_loader(batch_size=1):
+def test_create_data_loader(batch_size=1, split="test1"):
     """
     Create a DataLoader for the TEST set.
 
@@ -397,8 +397,17 @@ def test_create_data_loader(batch_size=1):
       - test embedding file (Test*.txt)
       - no random split, just full test set
     """
-    tensor_directory = DEFAULT_TEST_TENSOR_DIR
-    embedding_file = DEFAULT_META_TEST
+    if split == "test1":
+        tensor_directory = DEFAULT_TEST_TENSOR_DIR
+        embedding_file = DEFAULT_META_TEST
+    elif split == "dev":
+        # Checkpoint selection should not touch the evaluation split. Sweeping
+        # checkpoints on Test1 and then reporting Test1 is model selection on
+        # the test set; select here, report there.
+        tensor_directory = DEFAULT_VAL_TENSOR_DIR
+        embedding_file = DEFAULT_META_VAL
+    else:
+        raise ValueError(f"unknown split {split!r}; expected 'test1' or 'dev'")
 
     full_dataset = MelSpectrogramDataset(
         tensor_directory=tensor_directory,
