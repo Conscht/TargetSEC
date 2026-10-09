@@ -112,8 +112,15 @@ figcaption{font-size:.87rem;color:var(--fg-3);margin-top:.8rem;max-width:66ch}
 .ramp .d1{fill:var(--a1)}.ramp .d2{fill:var(--a2)}.ramp .d3{fill:var(--a3)}
 .ramp .d4{fill:var(--a4)}.ramp .d5{fill:var(--a5)}.ramp .d6{fill:var(--a6)}.ramp .d7{fill:var(--a7)}
 .ramp .face{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
-.ramp .facebg{stroke:currentColor;stroke-width:1.6}
 .ramp .pupil{fill:currentColor;stroke:none}
+/* each face takes its own level's ramp colour, like the dots between them:
+   level 1 barely tinted, level 7 the full accent, so the endpoint reads as
+   active on sight. White features because --a7 is dark in light mode and
+   saturated in dark mode -- 8.8:1 and 4.0:1 respectively. */
+.ramp .facebg{fill:var(--a1);stroke:currentColor;stroke-width:1.6}
+.ramp .hot .facebg{fill:var(--a7);stroke:none}
+.ramp .hot{stroke:var(--ink-hi)}
+.ramp .hot .pupil{fill:var(--ink-hi)}
 .ramp .curve{fill:none;stroke:currentColor;stroke-width:1.8;opacity:.4;
   stroke-linejoin:round;stroke-linecap:round}
 .ramp .lbl{fill:currentColor;opacity:.65;font:500 11px var(--mono);letter-spacing:.06em}
@@ -377,11 +384,11 @@ function drawRamp(){
       <polyline class="curve" points="${line}"/>
       ${dots}
       <g class="face" transform="translate(${fx0},${fy0})">
-        <circle r="15"/><circle class="pupil" cx="-5.5" cy="-4" r="1.7"/>
+        <circle r="15" class="facebg"/><circle class="pupil" cx="-5.5" cy="-4" r="1.7"/>
         <circle class="pupil" cx="5.5" cy="-4" r="1.7"/><path d="M-6.5 6 H6.5"/>
       </g>
-      <g class="face" transform="translate(${fx1},${fy1})">
-        <circle r="15"/><circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
+      <g class="face hot" transform="translate(${fx1},${fy1})">
+        <circle r="15" class="facebg"/><circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
         <circle class="pupil" cx="5.5" cy="-5.5" r="1.9"/><path d="M-7 2.5 Q0 11 7 2.5 Z"/>
       </g>
       <text class="lbl" x="${lx0}" y="114" text-anchor="middle">1 \u00b7 CALM</text>
