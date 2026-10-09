@@ -361,11 +361,16 @@ function drawRamp(){
     return +(r.left - base.left + r.width / 2).toFixed(1);
   });
   const ys = [84, 76, 67, 58, 50, 42, 34];
-  const fx0 = 17, fx1 = W - 17, fy0 = 90, fy1 = 28;
-  const pts = [[fx0 + 16, fy0 - 1]].concat(xs.map((x,i)=>[x, ys[i]])).concat([[fx1 - 16, fy1 + 1]]);
+  // the two faces ARE the first and last points, so they sit on the column
+  // centres like every other dot rather than beside them
+  const fx0 = xs[0], fy0 = ys[0], fx1 = xs[6], fy1 = ys[6];
+  const mid = xs.slice(1, 6).map((x, i) => [x, ys[i + 1]]);
+  const pts = [[fx0 + 16, fy0 - 1]].concat(mid).concat([[fx1 - 16, fy1 + 1]]);
   const line = pts.map(p => p.join(',')).join(' ');
-  const dots = xs.map((x,i) =>
-    `<circle class="dot d${i+1}" cx="${x}" cy="${ys[i]}" r="5.5"/>`).join('');
+  const dots = mid.map(([x, y], i) =>
+    `<circle class="dot d${i + 2}" cx="${x}" cy="${y}" r="5.5"/>`).join('');
+  // keep the end labels inside the box at narrow widths
+  const lx0 = Math.max(32, fx0), lx1 = Math.min(W - 48, fx1);
   cell.innerHTML =
    `<svg class="ramp" viewBox="0 0 ${W} ${H}" role="img" xmlns="http://www.w3.org/2000/svg"
          aria-label="The seven levels run from calm at level one to activated at level seven.">
@@ -379,8 +384,8 @@ function drawRamp(){
         <circle r="15"/><circle class="pupil" cx="-5.5" cy="-5.5" r="1.9"/>
         <circle class="pupil" cx="5.5" cy="-5.5" r="1.9"/><path d="M-7 2.5 Q0 11 7 2.5 Z"/>
       </g>
-      <text class="lbl" x="0" y="114">1 \u00b7 CALM</text>
-      <text class="lbl" x="${W}" y="114" text-anchor="end">7 \u00b7 ACTIVATED</text>
+      <text class="lbl" x="${lx0}" y="114" text-anchor="middle">1 \u00b7 CALM</text>
+      <text class="lbl" x="${lx1}" y="114" text-anchor="middle">7 \u00b7 ACTIVATED</text>
     </svg>`;
 }
 let rampTimer;
