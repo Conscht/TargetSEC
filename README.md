@@ -172,9 +172,6 @@ University of Texas at Dallas. The official partitions are used as published:
 | Development | 10,999 (8,376 with cached mels) | validation and checkpoint selection |
 | Test1 | 16,903 | evaluation only |
 
-Test1 is never trained on and never used for model selection. `src/dataset.py` carries an explicit
-guard that raises if any loader is pointed at the test partition.
-
 Preprocessing produces HuBERT km100 tokens and WavLM speaker embeddings under
 `hubert-km100/parsed_with_spkrEmbeds/`. Set the corpus root in `src/dataset.py`.
 
