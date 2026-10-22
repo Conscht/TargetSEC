@@ -94,20 +94,12 @@ header .links{justify-content:center}
 .wave .w1{fill:var(--w1)}.wave .w2{fill:var(--w2)}.wave .w3{fill:var(--w3)}
 .wave .w4{fill:var(--w4)}.wave .w5{fill:var(--w5)}.wave .w6{fill:var(--w6)}
 .wave .w7{fill:var(--w7)}
-/* Motion: each level rises from the centre line in turn, calm first, then keeps
-   pulsing at a rate and depth that grow with arousal - level 1 barely breathes,
-   level 7 throbs. CSS on the generated classes only, so make_wave_header.py can
-   keep rewriting the polygons without touching this. */
-.wave polygon{transform-box:fill-box;transform-origin:center;
-  animation:wave-in .7s cubic-bezier(.2,.7,.2,1) var(--in) both,
-            wave-pulse var(--dur) ease-in-out calc(var(--in) + .7s) infinite}
-.wave .w1{--in:0s;--dur:3.4s;--lo:.94}.wave .w2{--in:.09s;--dur:2.9s;--lo:.91}
-.wave .w3{--in:.18s;--dur:2.45s;--lo:.87}.wave .w4{--in:.27s;--dur:2.05s;--lo:.83}
-.wave .w5{--in:.36s;--dur:1.7s;--lo:.78}.wave .w6{--in:.45s;--dur:1.4s;--lo:.73}
-.wave .w7{--in:.54s;--dur:1.15s;--lo:.67}
-@keyframes wave-in{from{transform:scaleY(.04);opacity:0}to{transform:scaleY(1);opacity:1}}
-@keyframes wave-pulse{0%,100%{transform:scaleY(1)}25%{transform:scaleY(var(--lo))}
-  50%{transform:scaleY(calc((1 + var(--lo)) / 2))}75%{transform:scaleY(calc(var(--lo) + .03))}}
+/* Motion: the strip plays like a track. playWave() below dims it, sweeps a playhead
+   from calm to activated, lights what has been played and swells the envelope a
+   little under the head. It builds its layers from the generated polygons, so
+   make_wave_header.py can keep rewriting them; without it the strip is static. */
+.wave .base{opacity:.38}
+.wave .head{stroke:var(--fg);stroke-width:1.5;stroke-linecap:round;opacity:.6}
 .wavecap{display:flex;justify-content:space-between;align-items:center;
   max-width:none;margin:.6rem 0 2.6rem;gap:12px;
   font:500 .72rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3)}
@@ -185,7 +177,7 @@ pre{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
   padding:15px 17px;overflow-x:auto;font:400 .84rem/1.6 var(--mono);margin:0}
 code{font:400 .9em var(--mono)}
 footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.87rem;color:var(--fg-3)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}.wave polygon{animation:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
@@ -527,6 +519,57 @@ function render(){
   grid.querySelectorAll('button.play').forEach(b=>b.onclick=()=>play(b.dataset.src,b));
 }
 render();
+
+// Header strip as a playing track. The polygons keep their real envelopes; only the
+// stretch right under the playhead swells, so the motion travels through the speech
+// instead of stretching the whole shape. Lit copies are clipped to what has played.
+function playWave(){
+  const svg=document.querySelector('.wave');
+  if(!svg || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const NS='http://www.w3.org/2000/svg', W=1200, H=132, MID=H/2;
+  const SWEEP=9000, HOLD=1600, FADE=700, SIGMA=14, LIFT=.13;
+  const el=(tag,attrs)=>{const e=document.createElementNS(NS,tag);
+    for(const k in attrs) e.setAttribute(k,attrs[k]); return e;};
+  const polys=[...svg.querySelectorAll('polygon')];
+  const pts=polys.map(p=>p.getAttribute('points').trim().split(/\s+/).map(s=>s.split(',').map(Number)));
+  const base=el('g',{class:'base'}), lit=el('g',{'clip-path':'url(#wave-played)'});
+  const clip=el('rect',{x:0,y:0,width:0,height:H}), head=el('line',{class:'head',y1:3,y2:H-3});
+  const cp=el('clipPath',{id:'wave-played'}); cp.append(clip);
+  const defs=el('defs',{}); defs.append(cp);
+  const copies=polys.map(p=>p.cloneNode());
+  base.append(...polys); lit.append(...copies);
+  svg.append(defs,base,lit,head);
+
+  const touched=new Set();
+  function draw(t){
+    const px=t<SWEEP?W*t/SWEEP:W+3*SIGMA;
+    clip.setAttribute('width',Math.min(px,W));
+    lit.style.opacity=t<SWEEP+HOLD-FADE?1:(SWEEP+HOLD-t)/FADE;
+    head.setAttribute('x1',px); head.setAttribute('x2',px);
+    head.style.opacity=t<SWEEP?'':0;
+    pts.forEach((P,i)=>{
+      const near=px>P[0][0]-3*SIGMA && px<P[P.length/2-1][0]+3*SIGMA;
+      if(!near && !touched.has(i)) return;
+      const s=P.map(([x,y])=>{
+        const f=near?1+LIFT*Math.exp(-(((x-px)/SIGMA)**2)):1;
+        return `${x},${(MID+(y-MID)*f).toFixed(1)}`;}).join(' ');
+      polys[i].setAttribute('points',s); copies[i].setAttribute('points',s);
+      near?touched.add(i):touched.delete(i);
+    });
+  }
+  // Scrolling the strip away or hiding the tab pauses it; last=0 makes it resume
+  // where it left off instead of jumping ahead by the time it was gone.
+  let t=0, last=0, raf=0;
+  const frame=now=>{t=(t+(last?Math.min(now-last,1000):0))%(SWEEP+HOLD); last=now;
+    draw(t); raf=requestAnimationFrame(frame);};
+  draw(0);
+  new IntersectionObserver(([e])=>{
+    if(e.isIntersecting){ if(!raf){last=0; raf=requestAnimationFrame(frame);} }
+    else { cancelAnimationFrame(raf); raf=0; }
+  }).observe(svg);
+  document.addEventListener('visibilitychange',()=>{last=0;});
+}
+playWave();
 </script>
 </body>
 </html>
