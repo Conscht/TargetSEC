@@ -89,17 +89,18 @@ header .links{justify-content:center}
 .links a:hover{border-color:var(--accent);color:var(--accent)}
 .links a.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 
-.wave{display:block;width:100%;height:auto}
+.wave{display:block;width:100%;height:auto;overflow:visible}
 .wave polygon{stroke:none}
 .wave .w1{fill:var(--w1)}.wave .w2{fill:var(--w2)}.wave .w3{fill:var(--w3)}
 .wave .w4{fill:var(--w4)}.wave .w5{fill:var(--w5)}.wave .w6{fill:var(--w6)}
 .wave .w7{fill:var(--w7)}
 /* Motion: the strip plays like a track. playWave() below dims it, sweeps a playhead
-   from calm to activated, lights what has been played and swells the envelope a
-   little under the head. It builds its layers from the generated polygons, so
-   make_wave_header.py can keep rewriting them; without it the strip is static. */
+   from calm to activated, lights what has been played and swells the envelope
+   under the head - harder, faster and shakier the higher the level. It builds its
+   layers from the generated polygons, so make_wave_header.py can keep rewriting
+   them; without it the strip is static. The swell may overshoot the viewBox. */
 .wave .base{opacity:.38}
-.wave .head{stroke:var(--fg);stroke-width:1.5;stroke-linecap:round;opacity:.6}
+.wave .head{stroke:var(--fg);stroke-width:1.5;stroke-linecap:round}
 .wavecap{display:flex;justify-content:space-between;align-items:center;
   max-width:none;margin:.6rem 0 2.6rem;gap:12px;
   font:500 .72rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3)}
@@ -234,16 +235,16 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
 <section>
   <h2>The idea</h2>
   <p>Speech emotion conversion changes the emotion of an utterance while keeping its words and its
-  speaker. On acted corpora this is comparatively easy. On in-the-wild podcast speech &mdash;
-  non-parallel, noisy, unevenly recorded &mdash; existing fixed-duration systems tend to land at one
-  of two extremes: shift the emotion and wreck the audio, or keep the audio clean and barely shift
-  the emotion.</p>
+  speaker. With acted recordings this is relatively easy. With real podcast speech, which is
+  non-parallel, noisy and recorded in all sorts of conditions, existing fixed-duration systems tend
+  to end up at one of two extremes: they either shift the emotion and wreck the audio, or keep the
+  audio clean and barely shift the emotion.</p>
 
-  <p>TargetSEC separates the two problems. A HiFi-GAN decoder takes three inputs: content, speaker,
-  and a 128-dimensional style vector. During training the style vector comes from a mel style
-  encoder reading the source audio. <strong>At inference that encoder is removed and a latent
-  diffusion model generates the style vector in its place</strong>, conditioned on speaker identity
-  and a continuous target arousal.</p>
+  <p>TargetSEC handles these two problems separately. A HiFi-GAN decoder takes three inputs: content,
+  speaker and a 128-dimensional style vector. During training, the style vector comes from a mel
+  style encoder that reads the source audio. <strong>At inference time, that encoder is removed and
+  a latent diffusion model generates the style vector instead</strong>, conditioned on the speaker's
+  identity and a continuous target arousal value.</p>
 
   <figure class="arch">
     <a href="architecture.png">
@@ -255,20 +256,20 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
         cross-attention step feeding a U-Net, which denoises toward the style encoder's output; the
         style encoder is detached from the gradient.">
     </a>
-    <figcaption>(a) The framework. Solid arrows are training paths, dashed arrows inference-time
-    operations &mdash; at inference the style encoder is replaced by the LDM, and nothing else about
-    the decoder changes. (b) Training of the diffusion prior: the style encoder supplies the target
-    latent and is detached, so no gradient reaches it from the LDM.</figcaption>
+    <figcaption>(a) The framework. Solid arrows show training, dashed arrows show inference: at
+    inference time the LDM takes the style encoder's place, and the decoder stays exactly as it was.
+    (b) Training the diffusion prior. The style encoder provides the target latent but is detached,
+    so the LDM sends no gradient back into it.</figcaption>
   </figure>
 </section>
 
 <section id="listen">
   <h2>Listen</h2>
-  <p>Five utterances from the MSP-Podcast Test1 partition, each converted to all seven arousal levels
-  by TargetSEC and by the HiFi-GAN baseline. The sources were drawn at random by fixed seed before
-  any output was heard, and these are the first five of that draw &mdash; not a selection made after
-  listening. Clips come verbatim from the full test-set evaluation behind the numbers below, and all
-  are RMS-normalised to &minus;26&nbsp;dBFS so you are not hearing a loudness difference.</p>
+  <p>Here are five utterances from the MSP-Podcast Test1 split, each converted to all seven arousal
+  levels by TargetSEC and by the HiFi-GAN baseline. They are not hand-picked: a fixed random seed
+  chose the sources before any output was heard, and these are simply the first five it drew. Every
+  clip comes straight from the full test-set evaluation behind the numbers below, and all of them are
+  RMS-normalised to &minus;26&nbsp;dBFS, so the differences you hear are not just loudness.</p>
 
   <div class="demo">
     <div class="srcrow" id="srcrow" role="group" aria-label="Choose a source utterance"></div>
@@ -286,9 +287,9 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
 
 <section id="results">
   <h2>Results</h2>
-  <p>Full MSP-Podcast Test1: 16,903 utterances &times; 7 target levels = 118,321 conversions per
-  system. Training used the official Train partition with Development held out for checkpoint
-  selection.</p>
+  <p>Evaluated on the full MSP-Podcast Test1 set: 16,903 utterances &times; 7 target levels = 118,321
+  conversions per system. The models were trained on the official Train split, with the Development
+  split held out for choosing checkpoints.</p>
 
   <div class="tablescroll">
   <table class="data">
@@ -302,50 +303,50 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
       <tr><td>HiFi-GAN <span style="color:var(--fg-3)">(our reimpl.)</span></td><td>&ndash;</td><td>3.27</td><td>20.7%</td><td>0.087</td><td>24.5%</td></tr>
       <tr class="ours"><td>TargetSEC</td><td>&ndash;</td><td class="best">3.52</td><td class="best">20.4%</td><td class="best">0.065</td><td>20.9%</td></tr>
     </tbody>
-    <caption>Arousal error is measured on the audeering wav2vec2 dimensional recogniser against
-    targets on [0,&nbsp;1]. For reference, that recogniser scores 9.8% L<sub>abs</sub> against human
-    labels on <em>real</em> audio, and ground-truth Test1 audio scores 3.45 WVMOS.</caption>
+    <caption>Arousal error is measured with audeering's wav2vec2 dimensional emotion recogniser,
+    against targets on [0,&nbsp;1]. For reference, the recogniser itself has 9.8% L<sub>abs</sub>
+    against human labels on <em>real</em> audio, and the original Test1 audio scores 3.45 WVMOS.</caption>
   </table>
   </div>
 
-  <p style="margin-top:1.7rem">Two measures that share no model with the training objective: on an
-  independent IEMOCAP-trained recogniser, the rank correlation between requested arousal and
-  high-arousal posterior is <strong>0.450</strong> for TargetSEC against 0.325 for the baseline.
-  ECAPA-TDNN speaker similarity is 0.351&nbsp;&plusmn;&nbsp;0.12, against 0.370 for the baseline and
-  a random-pair floor of 0.05.</p>
+  <p style="margin-top:1.7rem">Two further checks use models that play no part in training. On an
+  independent recogniser trained on IEMOCAP, the rank correlation between the requested arousal and
+  the predicted probability of high arousal is <strong>0.450</strong> for TargetSEC, versus 0.325 for
+  the baseline. Speaker similarity (ECAPA-TDNN) is 0.351&nbsp;&plusmn;&nbsp;0.12, versus 0.370 for
+  the baseline and 0.05 for random speaker pairs.</p>
 
-  <p class="note">Aggregating the 118,321 matched pairs by speaker, TargetSEC has the lower arousal
+  <p class="note">Grouping the 118,321 matched pairs by speaker, TargetSEC has the lower arousal
   error for <strong>58 of 60</strong> Test1 speakers (paired <em>t</em>-test,
-  p&nbsp;&lt;&nbsp;10<sup>&minus;19</sup>). This establishes the gap on this test set for these
-  models; it is not a claim about variance across training seeds.</p>
+  p&nbsp;&lt;&nbsp;10<sup>&minus;19</sup>). That shows a real gap between these two models on this
+  test set; it says nothing about how results would vary across training seeds.</p>
 
   <figure>
     <img src="arousal-results.png" alt="Two bar charts over arousal levels 1 to 7. Left: arousal
       conversion error, where TargetSEC is lowest at levels 2 through 6 and highest at level 7.
       Right: WVMOS, where TargetSEC is highest at all seven levels while the HiFi-GAN baseline
       declines steadily as arousal rises.">
-    <figcaption>Per-level behaviour against both published baselines. TargetSEC leads on conversion
-    error through the mid-range and holds its audio quality across the whole scale, where the
-    HiFi-GAN baseline degrades steadily as arousal rises.</figcaption>
+    <figcaption>Per-level results against both published baselines. TargetSEC has the lowest
+    conversion error through the middle of the scale and keeps its audio quality at every level,
+    while the HiFi-GAN baseline gets steadily worse as arousal rises.</figcaption>
   </figure>
 </section>
 
 <section>
   <h2>Where it fails</h2>
-  <p>Level 7 is the one place TargetSEC loses, and it loses to every system compared:
-  0.148 L<sub>mse</sub> against 0.110&ndash;0.123 for the others. The cause is structural rather
-  than a tuning problem.</p>
+  <p>Level 7 is the one place TargetSEC loses, and there it loses to every other system:
+  0.148 L<sub>mse</sub> against 0.110&ndash;0.123. This is not a tuning problem; it comes from how
+  the system is built.</p>
 
-  <p>Extreme arousal in real speech is carried substantially by <strong>speech rate</strong> &mdash;
-  people speed up when agitated and slow down when subdued. TargetSEC maps a fixed-duration
-  utterance to a fixed-duration utterance: it can change timbre, energy and spectral shape, but it
-  cannot compress or stretch the utterance in time. Everything available to it saturates before the
-  top of the scale, which is visible in the figure above as the error curve turning back up.</p>
+  <p>In real speech, extreme arousal shows up largely in <strong>speech rate</strong>: people talk
+  faster when agitated and slower when subdued. TargetSEC keeps the length of the utterance fixed.
+  It can change timbre, energy and spectral shape, but it cannot speed the utterance up or slow it
+  down. Those levers run out before the top of the scale, which is why the error curve in the figure
+  above turns back up.</p>
 
-  <p>It is also why the duration-predicting <em>Uncert</em> baseline, otherwise behind on both
-  naturalness and conversion error, holds up better at the extremes. Adding a duration predictor is
-  the obvious next step, and this is an honest limitation of the fixed-duration framing rather than
-  something a longer training run would fix.</p>
+  <p>It also explains why the <em>Uncert</em> baseline, which predicts duration, holds up better at
+  the extremes even though it trails on both naturalness and conversion error elsewhere. This is a
+  genuine limit of the fixed-duration design rather than something longer training would fix, and
+  adding a duration predictor is the obvious next step.</p>
 </section>
 
 <section>
@@ -365,10 +366,11 @@ footer{border-top:1px solid var(--line);padding-block:2.2rem 3.8rem;font-size:.8
     <caption>Same decoder throughout; only the style prior changes.</caption>
   </table>
   </div>
-  <p style="margin-top:1.5rem">Replacing regression with diffusion and adding speaker conditioning
-  each lower the conversion error, and WVMOS moves the other way. That ordering is the point: a
-  deterministic MLP collapses toward the corpus mean style, which vocodes cleanly and converts
-  poorly. Higher WVMOS here indicates a safer, less committed prediction, not a better conversion.</p>
+  <p style="margin-top:1.5rem">Switching from regression to diffusion, and adding speaker
+  conditioning, each lower the conversion error, while WVMOS mostly moves the other way. That
+  trade-off is expected: a deterministic MLP collapses toward the average style of the corpus, which
+  the vocoder renders cleanly but which barely changes the emotion. Here, a higher WVMOS means a
+  safer, less committed prediction, not a better conversion.</p>
 </section>
 
 <section>
@@ -383,9 +385,9 @@ src/
   diffusion_module_fixed.py   Stage 4: the latent style LDM
   decoder/decoder.py          HiFi-GAN generator, MPD + MSD discriminators
   emotion/emotion_encoder.py  Frozen SER, differentiable wrapper, CCC</pre>
-  <p style="margin-top:1.3rem">Training needs MSP-Podcast v1.10, obtained under licence from the
-  University of Texas at Dallas. Checkpoints are not in the repository; the paths they are expected
-  at are listed in the manifest. See
+  <p style="margin-top:1.3rem">Training requires MSP-Podcast v1.10, which is available under licence
+  from the University of Texas at Dallas. Checkpoints are not included in the repository; the
+  manifest lists where the code expects to find them. See
   <a href="https://github.com/Conscht/TargetSEC">github.com/Conscht/TargetSEC</a>.</p>
 </section>
 
@@ -527,7 +529,13 @@ function playWave(){
   const svg=document.querySelector('.wave');
   if(!svg || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const NS='http://www.w3.org/2000/svg', W=1200, H=132, MID=H/2;
-  const SWEEP=9000, HOLD=1600, FADE=700, SIGMA=14, LIFT=.13;
+  // Intensity follows arousal: the head crosses calm levels slowly with a soft
+  // swell, and activated ones quickly with a bigger swell that trembles.
+  const STEP=[1600,1500,1400,1300,1200,1100,1000], SWEEP=STEP.reduce((a,b)=>a+b);
+  const HOLD=1600, FADE=700, SIGMA=14, SEG=W/7;
+  const LIFT=c=>.05+.17*c/6, SHAKE=c=>.1*(c/6)**1.5;
+  const headAt=t=>{for(let c=0;c<7;c++){if(t<STEP[c]) return SEG*(c+t/STEP[c]); t-=STEP[c];}
+    return W+3*SIGMA;};
   const el=(tag,attrs)=>{const e=document.createElementNS(NS,tag);
     for(const k in attrs) e.setAttribute(k,attrs[k]); return e;};
   const polys=[...svg.querySelectorAll('polygon')];
@@ -542,16 +550,17 @@ function playWave(){
 
   const touched=new Set();
   function draw(t){
-    const px=t<SWEEP?W*t/SWEEP:W+3*SIGMA;
+    const px=headAt(t);
     clip.setAttribute('width',Math.min(px,W));
     lit.style.opacity=t<SWEEP+HOLD-FADE?1:(SWEEP+HOLD-t)/FADE;
     head.setAttribute('x1',px); head.setAttribute('x2',px);
-    head.style.opacity=t<SWEEP?'':0;
+    head.style.opacity=t<SWEEP?.45+.35*Math.min(6,Math.floor(px/SEG))/6:0;
     pts.forEach((P,i)=>{
       const near=px>P[0][0]-3*SIGMA && px<P[P.length/2-1][0]+3*SIGMA;
       if(!near && !touched.has(i)) return;
       const s=P.map(([x,y])=>{
-        const f=near?1+LIFT*Math.exp(-(((x-px)/SIGMA)**2)):1;
+        const f=near?1+Math.exp(-(((x-px)/SIGMA)**2))
+          *(LIFT(i)+SHAKE(i)*Math.sin(t*.045+x*.35)):1;
         return `${x},${(MID+(y-MID)*f).toFixed(1)}`;}).join(' ');
       polys[i].setAttribute('points',s); copies[i].setAttribute('points',s);
       near?touched.add(i):touched.delete(i);
